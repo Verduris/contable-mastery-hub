@@ -23,6 +23,7 @@ import BankReconciliation from "./pages/BankReconciliation";
 const queryClient = new QueryClient();
 
 import AccountsReceivable from "./pages/AccountsReceivable";
+import AccountsPayable from "./pages/AccountsPayable";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/clientes" element={<Clients />} />
             <Route path="/clientes/:clientId/estado-de-cuenta" element={<ClientStatement />} />
             <Route path="/cuentas-por-cobrar" element={<AccountsReceivable />} />
+            <Route path="/cuentas-por-pagar" element={<AccountsPayable />} />
             <Route path="/reportes" element={<Reports />} />
             <Route path="/reportes/ingresos-por-cliente" element={<IncomeByClientReport />} />
             <Route path="/facturacion" element={<Invoicing />} />

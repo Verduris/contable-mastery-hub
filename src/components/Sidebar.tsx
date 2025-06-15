@@ -11,6 +11,8 @@ import {
   BarChart2,
   GraduationCap,
   List,
+  FilePlus,
+  FileMinus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +21,8 @@ const navigation = [
   { name: "Catálogo de Cuentas", href: "/cuentas", icon: List },
   { name: "Pólizas", href: "/polizas", icon: FileText },
   { name: "Clientes", href: "/clientes", icon: Users },
+  { name: "Cuentas por Cobrar", href: "/cuentas-por-cobrar", icon: FilePlus },
+  { name: "Cuentas por Pagar", href: "/cuentas-por-pagar", icon: FileMinus },
   { name: "Facturación", href: "/facturacion", icon: DollarSign },
   { name: "Reportes", href: "/reportes", icon: BarChart2 },
   { name: "Impuestos", href: "/impuestos", icon: Landmark },
