@@ -1,6 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Invoice, SatStatus } from '@/types/invoice';
+import { Client } from '@/types/client';
+import { Tables } from '@/integrations/supabase/types';
 
 export interface AddInvoicePayload {
     id: string; // UUID from XML
@@ -74,4 +75,42 @@ export const addInvoice = async (invoiceData: AddInvoicePayload) => {
         console.error('Error creating invoice:', error);
         throw new Error(error.message);
     }
+};
+
+const mapSupabaseToClient = (data: Tables<'clients'>): Client => {
+    return {
+        id: data.id,
+        name: data.name,
+        rfc: data.rfc,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        type: data.type,
+        status: data.status,
+        taxRegime: data.tax_regime,
+        balance: data.balance,
+        creditLimit: data.credit_limit ?? undefined,
+        creditDays: data.credit_days ?? undefined,
+        cfdiUse: data.cfdi_use ?? undefined,
+        paymentMethod: data.payment_method ?? undefined,
+        internalNotes: data.internal_notes ?? undefined,
+        associatedAccountId: data.associated_account_id ?? undefined,
+        contractUrl: data.contract_url ?? undefined,
+    };
+};
+
+export const fetchClients = async (): Promise<Client[]> => {
+    const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .order('name', { ascending: true });
+
+    if (error) {
+        console.error('Error fetching clients:', error);
+        throw new Error(error.message);
+    }
+    
+    if (!data) return [];
+
+    return data.map(mapSupabaseToClient);
 };

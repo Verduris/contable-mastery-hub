@@ -5,7 +5,7 @@ import { startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { fetchReceivables } from '@/queries/receivables';
 import { fetchPayables } from '@/queries/payables';
-import { initialClients } from '@/data/clients';
+import { fetchClients } from '@/queries/invoices';
 import { Client } from '@/types/client';
 
 export interface RankingData {
@@ -21,10 +21,11 @@ export function useRankingReport() {
 
     const { data: initialReceivables = [] } = useQuery({ queryKey: ['receivables'], queryFn: fetchReceivables });
     const { data: initialPayables = [] } = useQuery({ queryKey: ['payables'], queryFn: fetchPayables });
+    const { data: clients = [] } = useQuery({ queryKey: ['clients'], queryFn: fetchClients });
 
     const clientMap = useMemo(() => {
-        return new Map<string, Client>(initialClients.map(c => [c.id, c]));
-    }, []);
+        return new Map<string, Client>(clients.map(c => [c.id, c]));
+    }, [clients]);
 
     const topClients = useMemo((): RankingData[] => {
         if (!dateRange?.from || !dateRange?.to) return [];

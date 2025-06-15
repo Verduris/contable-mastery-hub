@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -8,7 +7,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { fetchInvoices, addInvoice } from "@/queries/invoices";
+import { fetchInvoices, addInvoice, fetchClients } from "@/queries/invoices";
 import { initialClients } from "@/data/clients";
 import { Invoice, SatStatus } from "@/types/invoice";
 import { Client } from "@/types/client";
@@ -23,8 +22,11 @@ const Invoicing = () => {
     queryKey: ['invoices'], 
     queryFn: fetchInvoices 
   });
+  const { data: clients = [], isLoading: isLoadingClients } = useQuery({ 
+    queryKey: ['clients'], 
+    queryFn: fetchClients 
+  });
   
-  const [clients] = useState<Client[]>(initialClients);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -151,6 +153,8 @@ const Invoicing = () => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
   };
 
+  const isLoading = isLoadingInvoices || isLoadingClients;
+
   return (
     <Card>
       <InvoicesHeader
@@ -162,7 +166,7 @@ const Invoicing = () => {
         onSaveInvoice={handleSaveInvoice}
       />
       <CardContent>
-        {isLoadingInvoices ? (
+        {isLoading ? (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
           </div>

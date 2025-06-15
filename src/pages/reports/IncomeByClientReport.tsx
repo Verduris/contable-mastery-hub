@@ -1,7 +1,5 @@
 
 import { useState, useMemo } from 'react';
-import { initialClients } from '@/data/clients';
-import { journalEntries as initialJournalEntries } from '@/data/journalEntries';
 import { Client } from '@/types/client';
 import { JournalEntry, JournalEntryStatus } from '@/types/journal';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -18,6 +16,10 @@ import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import { fetchClients } from '@/queries/invoices';
+import { fetchJournalEntries } from '@/queries/journalEntries';
+import { Skeleton } from '@/components/ui/skeleton';
 
 declare module "jspdf" {
   interface jsPDF {
@@ -27,8 +29,8 @@ declare module "jspdf" {
 
 const IncomeByClientReport = () => {
   const { toast } = useToast();
-  const [clients] = useState<Client[]>(initialClients);
-  const [journalEntries] = useState<JournalEntry[]>(initialJournalEntries);
+  const { data: clients = [], isLoading: isLoadingClients } = useQuery({ queryKey: ['clients'], queryFn: fetchClients });
+  const { data: journalEntries = [], isLoading: isLoadingJournalEntries } = useQuery({ queryKey: ['journalEntries'], queryFn: fetchJournalEntries });
 
   const defaultDateRange: DateRange = { from: subDays(new Date(), 30), to: new Date() };
   const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDateRange);
@@ -40,6 +42,8 @@ const IncomeByClientReport = () => {
   };
   
   const reportData = useMemo(() => {
+    if (isLoadingClients || isLoadingJournalEntries) return [];
+    
     const clientMap = new Map(clients.map(c => [c.id, c]));
 
     const filteredEntries = journalEntries.filter(entry => {
@@ -72,7 +76,9 @@ const IncomeByClientReport = () => {
         currentBalance: client?.balance || 0,
       };
     }).sort((a, b) => b.totalAmountReceived - a.totalAmountReceived);
-  }, [journalEntries, clients, dateRange, selectedClientId, selectedStatus]);
+  }, [journalEntries, clients, dateRange, selectedClientId, selectedStatus, isLoadingClients, isLoadingJournalEntries]);
+  
+  const isLoading = isLoadingClients || isLoadingJournalEntries;
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
@@ -123,7 +129,7 @@ const IncomeByClientReport = () => {
         <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
            <Popover>
             <PopoverTrigger asChild>
-              <Button id="date" variant={"outline"} className={cn("w-[300px] justify-start text-left font-normal", !dateRange && "text-muted-foreground")}>
+              <Button id="date" variant={"outline"} className={cn("w-[300px] justify-start text-left font-normal", !dateRange && "text-muted-foreground")} disabled={isLoading}>
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {dateRange?.from ? (
                   dateRange.to ? (
@@ -143,7 +149,7 @@ const IncomeByClientReport = () => {
               <Calendar initialFocus mode="range" defaultMonth={dateRange?.from} selected={dateRange} onSelect={setDateRange} numberOfMonths={2} locale={es} />
             </PopoverContent>
           </Popover>
-          <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+          <Select value={selectedClientId} onValueChange={setSelectedClientId} disabled={isLoading}>
             <SelectTrigger className="w-full md:w-[200px]">
               <SelectValue placeholder="Seleccionar cliente" />
             </SelectTrigger>
@@ -154,7 +160,7 @@ const IncomeByClientReport = () => {
               ))}
             </SelectContent>
           </Select>
-          <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as any)}>
+          <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as any)} disabled={isLoading}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Estatus" />
             </SelectTrigger>
@@ -165,12 +171,12 @@ const IncomeByClientReport = () => {
               <SelectItem value="Anulada">Anulada</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={resetFilters} variant="ghost">
+          <Button onClick={resetFilters} variant="ghost" disabled={isLoading}>
             <RotateCcw className="mr-2 h-4 w-4"/>
             Limpiar
           </Button>
           <div className="flex-grow"></div>
-          <Button onClick={handleExportPDF} disabled={reportData.length === 0}>
+          <Button onClick={handleExportPDF} disabled={reportData.length === 0 || isLoading}>
             <FileDown className="mr-2 h-4 w-4"/>
             Exportar a PDF
           </Button>
@@ -186,7 +192,16 @@ const IncomeByClientReport = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {reportData.length > 0 ? (
+            {isLoading ? (
+                [...Array(5)].map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-1/2 mx-auto" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-1/2 ml-auto" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-1/2 ml-auto" /></TableCell>
+                    </TableRow>
+                ))
+            ) : reportData.length > 0 ? (
               reportData.map((item) => (
                 <TableRow key={item.clientId}>
                   <TableCell className="font-medium">{item.clientName}</TableCell>

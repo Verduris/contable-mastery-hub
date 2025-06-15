@@ -5,7 +5,7 @@ import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { fetchReceivables } from '@/queries/receivables';
 import { fetchPayables } from '@/queries/payables';
-import { initialClients } from '@/data/clients';
+import { fetchClients } from '@/queries/invoices';
 import { AccountReceivableStatus } from '@/types/receivable';
 import { AccountPayableStatus } from '@/types/payable';
 import { Client } from '@/types/client';
@@ -33,8 +33,9 @@ export const useAgingReport = () => {
 
   const { data: initialReceivables = [] } = useQuery({ queryKey: ['receivables'], queryFn: fetchReceivables });
   const { data: initialPayables = [] } = useQuery({ queryKey: ['payables'], queryFn: fetchPayables });
+  const { data: clients = [] } = useQuery({ queryKey: ['clients'], queryFn: fetchClients });
 
-  const clientMap = useMemo(() => new Map(initialClients.map(c => [c.id, c.name])), []);
+  const clientMap = useMemo(() => new Map(clients.map(c => [c.id, c.name])), [clients]);
 
   const combinedData = useMemo(() => {
     const today = startOfDay(new Date());
@@ -111,11 +112,11 @@ export const useAgingReport = () => {
   
   const entities = useMemo((): Client[] => {
     if (typeFilter === 'Todos') {
-        return initialClients;
+        return clients;
     }
     const entityIds = new Set(combinedData.filter(i => i.type === typeFilter).map(i => i.entityId));
-    return initialClients.filter(c => entityIds.has(c.id));
-  }, [typeFilter, combinedData]);
+    return clients.filter(c => entityIds.has(c.id));
+  }, [typeFilter, combinedData, clients]);
 
 
   return {
