@@ -1,8 +1,8 @@
-
 import { useState, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
 import { startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
-import { initialReceivables } from '@/data/receivables';
+import { useQuery } from '@tanstack/react-query';
+import { fetchReceivables } from '@/queries/receivables';
 import { initialPayables } from '@/data/payables';
 import { initialClients } from '@/data/clients';
 import { Client } from '@/types/client';
@@ -17,6 +17,8 @@ export function useRankingReport() {
         from: startOfMonth(new Date()),
         to: endOfMonth(new Date()),
     });
+
+    const { data: initialReceivables = [] } = useQuery({ queryKey: ['receivables'], queryFn: fetchReceivables });
 
     const clientMap = useMemo(() => {
         return new Map<string, Client>(initialClients.map(c => [c.id, c]));
@@ -43,7 +45,7 @@ export function useRankingReport() {
             }))
             .sort((a, b) => b.total - a.total)
             .slice(0, 5);
-    }, [dateRange, clientMap]);
+    }, [dateRange, clientMap, initialReceivables]);
 
     const topSuppliers = useMemo((): RankingData[] => {
         if (!dateRange?.from || !dateRange?.to) return [];

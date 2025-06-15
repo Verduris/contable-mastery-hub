@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,7 +7,8 @@ import { ArrowDown, ArrowUp, CircleDollarSign, FileMinus, FilePlus, AlertCircle,
 import { subMonths, format, parseISO, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import { initialReceivables } from '@/data/receivables';
+import { useQuery } from '@tanstack/react-query';
+import { fetchReceivables } from '@/queries/receivables';
 import { initialPayables } from '@/data/payables';
 import { initialClients } from '@/data/clients';
 import { journalEntries } from '@/data/journalEntries';
@@ -36,6 +36,7 @@ const StatCard = ({ title, value, icon: Icon, linkTo, colorClass }: { title: str
 
 
 const Dashboard = () => {
+  const { data: initialReceivables = [] } = useQuery({ queryKey: ['receivables'], queryFn: fetchReceivables });
   const clientMap = useMemo(() => new Map(initialClients.map(c => [c.id, c.name])), []);
 
   const financialMetrics = useMemo(() => {
@@ -67,7 +68,7 @@ const Dashboard = () => {
       .reduce((acc, j) => acc + j.lines.reduce((lineAcc, line) => lineAcc + line.debit, 0), 0);
 
     return { totalReceivable, totalPayable, netBalance, monthlyIncome, monthlyExpense };
-  }, []);
+  }, [initialReceivables, initialPayables]);
 
   const incomeExpenseData = useMemo(() => {
     const data: { [key: string]: { name: string; ingresos: number; egresos: number } } = {};
@@ -112,7 +113,7 @@ const Dashboard = () => {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
-  }, [clientMap]);
+  }, [clientMap, initialReceivables]);
 
   const payablesData = useMemo(() => {
     const bySupplier = initialPayables
@@ -132,7 +133,7 @@ const Dashboard = () => {
   const alerts = useMemo(() => {
     const topOverdueReceivables = initialReceivables
       .filter(r => r.status === 'Vencida')
-      .sort((a, b) => differenceInDays(new Date(), parseISO(a.dueDate)) - differenceInDays(new Date(), parseISO(b.dueDate)))
+      .sort((a, b) => differenceInDays(new Date(), parseISO(b.dueDate)) - differenceInDays(new Date(), parseISO(a.dueDate)))
       .slice(0, 3);
       
     const topOverduePayables = initialPayables
@@ -141,7 +142,7 @@ const Dashboard = () => {
       .slice(0, 3);
 
     return { topOverdueReceivables, topOverduePayables };
-  }, []);
+  }, [clientMap, initialReceivables, initialPayables]);
 
   const PIE_COLORS = ['#0ea5e9', '#f97316', '#10b981', '#f43f5e', '#8b5cf6'];
 
@@ -257,4 +258,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

@@ -2,7 +2,8 @@
 import { useState, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
 import { addDays, differenceInDays, parseISO, startOfDay } from 'date-fns';
-import { initialReceivables } from '@/data/receivables';
+import { useQuery } from '@tanstack/react-query';
+import { fetchReceivables } from '@/queries/receivables';
 import { initialPayables } from '@/data/payables';
 import { initialClients } from '@/data/clients';
 import { AccountReceivableStatus } from '@/types/receivable';
@@ -29,6 +30,8 @@ export const useAgingReport = () => {
   const [typeFilter, setTypeFilter] = useState<AgingFilterType>('Todos');
   const [entityFilter, setEntityFilter] = useState<string>('Todos');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
+  const { data: initialReceivables = [] } = useQuery({ queryKey: ['receivables'], queryFn: fetchReceivables });
 
   const clientMap = useMemo(() => new Map(initialClients.map(c => [c.id, c.name])), []);
 
@@ -86,7 +89,7 @@ export const useAgingReport = () => {
     });
 
     return [...receivables, ...payables];
-  }, [clientMap]);
+  }, [clientMap, initialReceivables, initialPayables]);
 
   const filteredData = useMemo(() => {
     return combinedData.filter(item => {

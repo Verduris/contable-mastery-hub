@@ -1,16 +1,16 @@
-
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useQuery } from "@tanstack/react-query";
+import { fetchReceivables } from "@/queries/receivables";
 
 import { initialInvoices } from "@/data/invoices";
 import { initialClients } from "@/data/clients";
 import { journalEntries as initialJournalEntries } from "@/data/journalEntries";
-import { initialReceivables } from "@/data/receivables";
 import { Invoice, SatStatus } from "@/types/invoice";
 import { Client } from "@/types/client";
 import { JournalEntry } from "@/types/journal";
@@ -25,11 +25,16 @@ const Invoicing = () => {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(
     initialJournalEntries
   );
-  const [receivables, setReceivables] = useState<AccountReceivable[]>(
-    initialReceivables
-  );
+  const { data: receivablesData } = useQuery({ queryKey: ['receivables'], queryFn: fetchReceivables });
+  const [receivables, setReceivables] = useState<AccountReceivable[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (receivablesData) {
+      setReceivables(receivablesData);
+    }
+  }, [receivablesData]);
 
   const [filters, setFilters] = useState<{
     client: string;
@@ -125,7 +130,6 @@ const Invoicing = () => {
       paidAmount: 0,
       outstandingBalance: newInvoiceData.amount,
       status: "Pendiente",
-      paymentHistory: [],
       notes: `Generado desde factura ${newInvoiceData.uuid.substring(0, 8)}...`,
     };
     setReceivables((prev) => [...prev, newReceivable]);

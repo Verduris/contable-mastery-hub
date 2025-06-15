@@ -1,8 +1,8 @@
-
 import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
+import { useQuery } from '@tanstack/react-query';
+import { fetchReceivables } from '@/queries/receivables';
 import { initialPayables } from '@/data/payables';
-import { initialReceivables } from '@/data/receivables';
 import { initialClients } from '@/data/clients';
 import {
     eachDayOfInterval,
@@ -20,6 +20,7 @@ interface UseCashFlowReportProps {
 }
 
 export const useCashFlowReport = ({ date, selectedEntity }: UseCashFlowReportProps) => {
+    const { data: initialReceivables = [] } = useQuery({ queryKey: ['receivables'], queryFn: fetchReceivables });
     const clientsAndSuppliers = useMemo(() => initialClients, []);
 
     const defaultDateRange: DateRange = useMemo(() => ({
@@ -76,7 +77,7 @@ export const useCashFlowReport = ({ date, selectedEntity }: UseCashFlowReportPro
                 accumulated,
             };
         });
-    }, [from, to, selectedEntity]);
+    }, [from, to, selectedEntity, initialReceivables, initialPayables]);
 
     const summary = useMemo(() => {
         const totalIncome = data.reduce((sum, item) => sum + item.income, 0);
