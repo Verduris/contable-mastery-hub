@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
@@ -176,7 +175,7 @@ const TaxCalendar = () => {
             ...newEventData,
             status: 'Pendiente',
             regime: 'General',
-            legalBasis: 'N/A',
+            legal_basis: 'N/A',
         });
     };
     
@@ -293,11 +292,11 @@ const TaxCalendar = () => {
                                         )}
                                         </div>
 
-                                        {event.legalBasis !== 'N/A' && 
+                                        {event.legal_basis !== 'N/A' && 
                                             <div className="mt-4 pt-3 border-t">
                                                 <p className="text-xs font-mono text-muted-foreground flex items-center gap-1.5 pt-2">
                                                     <FileText className="h-3 w-3" />
-                                                    Base Legal: {event.legalBasis}
+                                                    Base Legal: {event.legal_basis}
                                                 </p>
                                             </div>
                                         }
