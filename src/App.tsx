@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import IncomeByClientReport from "./pages/reports/IncomeByClientReport";
 import ClientStatement from "./pages/ClientStatement";
 import BankReconciliation from "./pages/BankReconciliation";
+import ExpensesBySupplierReport from "./pages/reports/ExpensesBySupplierReport";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/cuentas-por-pagar" element={<AccountsPayable />} />
             <Route path="/reportes" element={<Reports />} />
             <Route path="/reportes/ingresos-por-cliente" element={<IncomeByClientReport />} />
+            <Route path="/reportes/egresos-por-proveedor" element={<ExpensesBySupplierReport />} />
             <Route path="/facturacion" element={<Invoicing />} />
             <Route path="/impuestos" element={<Taxes />} />
             <Route path="/agenda" element={<TaxCalendar />} />

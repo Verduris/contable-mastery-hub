@@ -10,6 +10,12 @@ const reports = [
         link: '/reportes/ingresos-por-cliente',
         icon: <BarChart className="w-6 h-6 text-primary" />,
     },
+    {
+        title: 'Egresos por Proveedor',
+        description: 'Analiza los egresos totales agrupados por cada proveedor.',
+        link: '/reportes/egresos-por-proveedor',
+        icon: <BarChart className="w-6 h-6 text-primary" />,
+    },
     // Futuros reportes se pueden agregar aquí
 ];
 
