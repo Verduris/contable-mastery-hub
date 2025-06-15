@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
@@ -331,15 +330,6 @@ const TaxCalendar = () => {
                             <p className="text-xs text-muted-foreground">Selecciona otra fecha o ajusta los filtros.</p>
                         </div>
                     )}
-                </div>
-            </div>
-             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 flex items-start gap-3">
-                <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                <div>
-                    <h3 className="font-semibold mb-1">Funciones avanzadas</h3>
-                    <p className="text-sm ">
-                        Para **recordatorios automáticos por email** y **subir acuses de pago**, necesitas un backend. Activa la integración con **Supabase** en tu proyecto para habilitar estas y otras potentes capacidades.
-                    </p>
                 </div>
             </div>
         </div>
