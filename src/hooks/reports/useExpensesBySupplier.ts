@@ -1,11 +1,11 @@
-
 import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { isWithinInterval } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
 
 import { initialClients } from '@/data/clients';
-import { initialPayables } from '@/data/payables';
-import { journalEntries } from '@/data/journalEntries';
+import { fetchPayables } from '@/queries/payables';
+import { journalEntries as initialJournalEntries } from '@/data/journalEntries';
 import type { JournalEntryStatus } from '@/types/journal';
 
 export const journalStatusOptions: { value: JournalEntryStatus | 'todos'; label: string }[] = [
@@ -22,6 +22,8 @@ interface UseExpensesBySupplierParams {
 }
 
 export const useExpensesBySupplier = ({ date, selectedSupplier, selectedStatus }: UseExpensesBySupplierParams) => {
+    const { data: initialPayables = [] } = useQuery({ queryKey: ['payables'], queryFn: fetchPayables });
+    const journalEntries = initialJournalEntries;
     const supplierMap = useMemo(() => new Map(initialClients.map(c => [c.id, c.name])), []);
 
     const filteredData = useMemo(() => {
@@ -64,7 +66,7 @@ export const useExpensesBySupplier = ({ date, selectedSupplier, selectedStatus }
 
         return result;
 
-    }, [date, selectedSupplier, selectedStatus, supplierMap]);
+    }, [date, selectedSupplier, selectedStatus, supplierMap, initialPayables, journalEntries]);
 
     return { filteredData, suppliers: initialClients, journalStatusOptions };
 };

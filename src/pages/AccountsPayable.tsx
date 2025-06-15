@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AccountPayable, AccountPayableStatus } from '@/types/payable';
-import { initialPayables } from '@/data/payables';
 import { initialClients } from '@/data/clients';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInDays, parseISO, format } from 'date-fns';
@@ -15,9 +15,13 @@ import { FileDown, PlusCircle } from 'lucide-react';
 import { AddPayableDialog, AddPayableFormData } from '@/components/payables/AddPayableDialog';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchPayables, addPayable, recordPayablePayment, markPayableAsPaid } from '@/queries/payables';
+import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const AccountsPayable = () => {
-  const [payables, setPayables] = useState<AccountPayable[]>(initialPayables);
+  const queryClient = useQueryClient();
   const [supplierFilter, setSupplierFilter] = useState<string>("Todos");
   const [statusFilter, setStatusFilter] = useState<AccountPayableStatus | "Todos">("Todos");
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -25,6 +29,31 @@ const AccountsPayable = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const { toast } = useToast();
+  
+  const { data: payables = [], isLoading } = useQuery({
+    queryKey: ['payables'],
+    queryFn: fetchPayables,
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime-payables')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'accounts_payable' }, 
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['payables'] });
+        }
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payable_payments' }, 
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['payables'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const supplierMap = useMemo(() => new Map(initialClients.map(c => [c.id, c.name])), []);
 
@@ -35,30 +64,20 @@ const AccountsPayable = () => {
       return supplierMatch && statusMatch;
     }).sort((a, b) => differenceInDays(parseISO(a.dueDate), parseISO(b.dueDate)));
   }, [payables, supplierFilter, statusFilter]);
+  
+  const markAsPaidMutation = useMutation({
+    mutationFn: markPayableAsPaid,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payables'] });
+      toast({ title: "Cuenta marcada como pagada", description: "El estado de la cuenta ha sido actualizado." });
+    },
+    onError: (error) => {
+      toast({ variant: 'destructive', title: "Error", description: error.message });
+    }
+  });
 
   const handleMarkAsPaid = (payableId: string) => {
-    setPayables(prev => prev.map(p => {
-      if (p.id === payableId) {
-        const paymentAmount = p.totalAmount - p.paidAmount;
-        const newPayment = paymentAmount > 0 ? [{
-            id: `pay-p-${Date.now()}`,
-            date: new Date().toISOString(),
-            amount: paymentAmount,
-            notes: 'Pago de saldo restante para marcar como pagada.'
-        }] : [];
-        const updatedPaymentHistory = [...(p.paymentHistory || []), ...newPayment];
-        
-        return { 
-          ...p, 
-          status: 'Pagada', 
-          paidAmount: p.totalAmount, 
-          outstandingBalance: 0,
-          paymentHistory: updatedPaymentHistory,
-        };
-      }
-      return p;
-    }));
-    toast({ title: "Cuenta marcada como pagada", description: "El estado de la cuenta ha sido actualizado." });
+    markAsPaidMutation.mutate(payableId);
   };
 
   const openPaymentDialog = (payable: AccountPayable) => {
@@ -66,66 +85,41 @@ const AccountsPayable = () => {
     setIsPaymentDialogOpen(true);
   };
 
+  const recordPaymentMutation = useMutation({
+    mutationFn: recordPayablePayment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payables'] });
+      toast({ title: "Pago registrado", description: `El pago ha sido registrado.` });
+      setIsPaymentDialogOpen(false);
+      setSelectedPayable(null);
+    },
+    onError: (error) => {
+      toast({ variant: 'destructive', title: "Error", description: error.message });
+    }
+  });
+
   const handleRecordPayment = (paymentAmount: number) => {
     if (!selectedPayable || paymentAmount <= 0) return;
-
-    setPayables(prev => prev.map(p => {
-      if (p.id === selectedPayable.id) {
-        const newPaidAmount = p.paidAmount + paymentAmount;
-        const newOutstandingBalance = p.totalAmount - newPaidAmount;
-        let newStatus: AccountPayableStatus = 'Parcialmente Pagada';
-        if (newOutstandingBalance <= 0) {
-          newStatus = 'Pagada';
-        } else if (differenceInDays(new Date(), parseISO(p.dueDate)) > 0) {
-            newStatus = 'Vencida';
-        }
-        
-        const newPayment = {
-            id: `pay-p-${Date.now()}`,
-            date: new Date().toISOString(),
-            amount: paymentAmount,
-        };
-        const updatedPaymentHistory = [...(p.paymentHistory || []), newPayment];
-
-        return {
-          ...p,
-          paidAmount: newPaidAmount,
-          outstandingBalance: newOutstandingBalance,
-          status: newStatus,
-          paymentHistory: updatedPaymentHistory,
-        };
-      }
-      return p;
-    }));
-    toast({ title: "Pago registrado", description: `Se ha registrado un pago por ${paymentAmount.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}.` });
-    setIsPaymentDialogOpen(false);
-    setSelectedPayable(null);
+    recordPaymentMutation.mutate({ payableId: selectedPayable.id, amount: paymentAmount });
   };
 
-  const handleAddPayable = (data: AddPayableFormData) => {
-    const newPayable: AccountPayable = {
-      id: `cxp-${Date.now()}`,
-      supplierId: data.supplierId,
-      issueDate: new Date(data.issueDate).toISOString(),
-      dueDate: new Date(data.dueDate).toISOString(),
-      totalAmount: data.totalAmount,
-      paidAmount: 0,
-      outstandingBalance: data.totalAmount,
-      status: 'Pendiente',
-      notes: data.notes,
-      paymentHistory: [],
-    };
-
-    if (differenceInDays(parseISO(newPayable.dueDate), new Date()) < 0) {
-        newPayable.status = 'Vencida';
+  const addPayableMutation = useMutation({
+    mutationFn: addPayable,
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['payables'] });
+        setIsAddDialogOpen(false);
+        toast({
+            title: "Cuenta por pagar registrada",
+            description: "La nueva cuenta ha sido añadida exitosamente."
+        });
+    },
+    onError: (error) => {
+        toast({ variant: 'destructive', title: "Error", description: error.message });
     }
+  });
 
-    setPayables(prev => [newPayable, ...prev]);
-    setIsAddDialogOpen(false);
-    toast({
-        title: "Cuenta por pagar registrada",
-        description: "La nueva cuenta ha sido añadida exitosamente."
-    });
+  const handleAddPayable = (data: AddPayableFormData) => {
+    addPayableMutation.mutate(data);
   };
 
   const handleExportPDF = () => {
@@ -173,12 +167,20 @@ const AccountsPayable = () => {
           />
         </CardHeader>
         <CardContent>
-          <PayablesTable 
-            payables={filteredPayables}
-            supplierMap={supplierMap}
-            onOpenPaymentDialog={openPaymentDialog}
-            onMarkAsPaid={handleMarkAsPaid}
-          />
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : (
+            <PayablesTable 
+              payables={filteredPayables}
+              supplierMap={supplierMap}
+              onOpenPaymentDialog={openPaymentDialog}
+              onMarkAsPaid={handleMarkAsPaid}
+            />
+          )}
         </CardContent>
       </Card>
 

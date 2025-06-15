@@ -1,9 +1,10 @@
+
 import { useState, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
 import { startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { fetchReceivables } from '@/queries/receivables';
-import { initialPayables } from '@/data/payables';
+import { fetchPayables } from '@/queries/payables';
 import { initialClients } from '@/data/clients';
 import { Client } from '@/types/client';
 
@@ -19,6 +20,7 @@ export function useRankingReport() {
     });
 
     const { data: initialReceivables = [] } = useQuery({ queryKey: ['receivables'], queryFn: fetchReceivables });
+    const { data: initialPayables = [] } = useQuery({ queryKey: ['payables'], queryFn: fetchPayables });
 
     const clientMap = useMemo(() => {
         return new Map<string, Client>(initialClients.map(c => [c.id, c]));
@@ -70,7 +72,7 @@ export function useRankingReport() {
             }))
             .sort((a, b) => b.total - a.total)
             .slice(0, 5);
-    }, [dateRange, clientMap]);
+    }, [dateRange, clientMap, initialPayables]);
 
     return {
         dateRange,

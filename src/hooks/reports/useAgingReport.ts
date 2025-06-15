@@ -1,10 +1,10 @@
 
 import { useState, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
-import { addDays, differenceInDays, parseISO, startOfDay } from 'date-fns';
+import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { fetchReceivables } from '@/queries/receivables';
-import { initialPayables } from '@/data/payables';
+import { fetchPayables } from '@/queries/payables';
 import { initialClients } from '@/data/clients';
 import { AccountReceivableStatus } from '@/types/receivable';
 import { AccountPayableStatus } from '@/types/payable';
@@ -32,6 +32,7 @@ export const useAgingReport = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   const { data: initialReceivables = [] } = useQuery({ queryKey: ['receivables'], queryFn: fetchReceivables });
+  const { data: initialPayables = [] } = useQuery({ queryKey: ['payables'], queryFn: fetchPayables });
 
   const clientMap = useMemo(() => new Map(initialClients.map(c => [c.id, c.name])), []);
 
