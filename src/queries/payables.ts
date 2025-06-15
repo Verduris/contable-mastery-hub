@@ -24,7 +24,7 @@ export const fetchPayables = async (): Promise<AccountPayable[]> => {
     dueDate: p.due_date,
     totalAmount: p.total_amount,
     paidAmount: p.paid_amount,
-    outstandingBalance: p.outstanding_balance,
+    outstandingBalance: p.outstanding_balance as number,
     status: p.status,
     notes: p.notes || undefined,
     paymentMethod: p.payment_method || undefined,

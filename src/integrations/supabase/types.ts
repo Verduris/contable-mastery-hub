@@ -62,6 +62,62 @@ export type Database = {
           },
         ]
       }
+      accounts_payable: {
+        Row: {
+          associated_account_id: string | null
+          created_at: string
+          due_date: string
+          id: string
+          invoice_id: string | null
+          issue_date: string
+          notes: string | null
+          outstanding_balance: number | null
+          paid_amount: number
+          payment_method: string | null
+          status: Database["public"]["Enums"]["account_payable_status"]
+          supplier_id: string
+          total_amount: number
+        }
+        Insert: {
+          associated_account_id?: string | null
+          created_at?: string
+          due_date: string
+          id?: string
+          invoice_id?: string | null
+          issue_date: string
+          notes?: string | null
+          outstanding_balance?: number | null
+          paid_amount?: number
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["account_payable_status"]
+          supplier_id: string
+          total_amount: number
+        }
+        Update: {
+          associated_account_id?: string | null
+          created_at?: string
+          due_date?: string
+          id?: string
+          invoice_id?: string | null
+          issue_date?: string
+          notes?: string | null
+          outstanding_balance?: number | null
+          paid_amount?: number
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["account_payable_status"]
+          supplier_id?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_payable_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts_receivable: {
         Row: {
           client_id: string
@@ -302,6 +358,41 @@ export type Database = {
           },
         ]
       }
+      payable_payments: {
+        Row: {
+          account_payable_id: string
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          account_payable_id: string
+          amount: number
+          created_at?: string
+          date: string
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          account_payable_id?: string
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payable_payments_account_payable_id_fkey"
+            columns: ["account_payable_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_payable"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       receivable_payments: {
         Row: {
           account_receivable_id: string
@@ -384,8 +475,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      mark_payable_as_paid: {
+        Args: { p_payable_id: string }
+        Returns: undefined
+      }
       mark_receivable_as_paid: {
         Args: { p_receivable_id: string }
+        Returns: undefined
+      }
+      record_payable_payment: {
+        Args: {
+          p_payable_id: string
+          p_amount: number
+          p_date: string
+          p_notes: string
+        }
         Returns: undefined
       }
       record_receivable_payment: {
@@ -414,6 +518,11 @@ export type Database = {
     }
     Enums: {
       account_nature: "Deudora" | "Acreedora"
+      account_payable_status:
+        | "Pendiente"
+        | "Pagada"
+        | "Parcialmente Pagada"
+        | "Vencida"
       account_receivable_status:
         | "Pendiente"
         | "Pagada"
@@ -542,6 +651,12 @@ export const Constants = {
   public: {
     Enums: {
       account_nature: ["Deudora", "Acreedora"],
+      account_payable_status: [
+        "Pendiente",
+        "Pagada",
+        "Parcialmente Pagada",
+        "Vencida",
+      ],
       account_receivable_status: [
         "Pendiente",
         "Pagada",
