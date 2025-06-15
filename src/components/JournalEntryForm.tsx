@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Calendar as CalendarIcon, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -44,13 +45,6 @@ const formSchema = z.object({
     .refine(lines => lines.every(line => line.debit > 0 || line.credit > 0), {
         message: "Cada movimiento debe tener un monto en Debe o Haber.",
     })
-}).refine(data => {
-    const totalDebit = data.lines.reduce((acc, line) => acc + line.debit, 0);
-    const totalCredit = data.lines.reduce((acc, line) => acc + line.credit, 0);
-    return totalDebit === totalCredit;
-}, {
-    message: "La suma del Debe y el Haber no coincide.",
-    path: ["lines"],
 });
 
 type JournalEntryFormProps = {
@@ -84,6 +78,9 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
         return acc;
     }, { debit: 0, credit: 0 });
   }, [watchedLines]);
+
+  const isBalanced = useMemo(() => totals.debit === totals.credit, [totals]);
+  const hasAmounts = useMemo(() => totals.debit > 0 || totals.credit > 0, [totals]);
 
   function onSubmit(values: JournalEntryFormData) {
     onSave(values);
@@ -152,7 +149,23 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
 
         <JournalEntryLinesTable accounts={accounts} />
         
-        {form.formState.errors.lines && <p className="text-sm font-medium text-destructive mt-2">{form.formState.errors.lines.message || form.formState.errors.lines.root?.message}</p>}
+        <div className="mt-4 -mb-2">
+            {hasAmounts && (
+                 <Alert variant={isBalanced ? "default" : "destructive"} className={cn(
+                    isBalanced && "border-green-500 text-green-700 dark:border-green-600 dark:text-green-500 [&>svg]:text-green-700 dark:[&>svg]:text-green-500"
+                )}>
+                    {isBalanced ? <CheckCircle2 /> : <AlertTriangle />}
+                    <AlertTitle>{isBalanced ? "¡Póliza Cuadrada!" : "Saldos no coinciden"}</AlertTitle>
+                    <AlertDescription>
+                        {isBalanced
+                            ? "✅ La póliza cuadra correctamente."
+                            : "⚠️ La suma del Debe y el Haber no coincide. Verifica tus movimientos."}
+                    </AlertDescription>
+                </Alert>
+            )}
+        </div>
+        
+        {form.formState.errors.lines && <p className="text-sm font-medium text-destructive mt-2">{form.formState.errors.lines.message}</p>}
         
         <div className="flex justify-end items-center gap-4 pt-4 border-t">
             <div className={cn("text-lg font-semibold", totals.debit !== totals.credit && "text-destructive")}>
