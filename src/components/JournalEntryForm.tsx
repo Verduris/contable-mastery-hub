@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Account } from "@/types/account";
-import { JournalEntryFormData } from "@/types/journal";
+import { JournalEntryFormData, JournalEntryStatus } from "@/types/journal";
 import { useMemo } from "react";
 import { JournalEntryLinesTable } from "./journal-entry-form/JournalEntryLinesTable";
 
@@ -35,6 +35,7 @@ const formSchema = z.object({
     date: z.date({ required_error: "La fecha es requerida." }),
     concept: z.string().min(1, "El concepto es requerido."),
     type: z.enum(["Ingreso", "Egreso", "Diario"]),
+    status: z.enum(["Borrador", "Revisada", "Anulada"]),
     reference: z.string().optional(),
     lines: z.array(z.object({
         accountId: z.string().min(1, "Debes seleccionar una cuenta."),
@@ -61,6 +62,7 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
       number: nextEntryNumber,
       date: new Date(),
       type: "Diario",
+      status: "Borrador" as JournalEntryStatus,
       concept: "",
       reference: "",
       lines: [
@@ -89,7 +91,7 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
             <FormField control={form.control} name="number" render={({ field }) => (
                 <FormItem>
                     <FormLabel>Nº Póliza</FormLabel>
@@ -112,7 +114,7 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
                 </FormItem>
             )} />
             <FormField control={form.control} name="date" render={({ field }) => (
-                <FormItem className="flex flex-col pt-2">
+                <FormItem className="flex flex-col">
                     <FormLabel>Fecha</FormLabel>
                     <Popover>
                         <PopoverTrigger asChild>
@@ -127,6 +129,20 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
                             <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
                         </PopoverContent>
                     </Popover>
+                    <FormMessage />
+                </FormItem>
+            )} />
+             <FormField control={form.control} name="status" render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Estatus</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            <SelectItem value="Borrador">Borrador</SelectItem>
+                            <SelectItem value="Revisada">Revisada</SelectItem>
+                            <SelectItem value="Anulada">Anulada</SelectItem>
+                        </SelectContent>
+                    </Select>
                     <FormMessage />
                 </FormItem>
             )} />
@@ -182,7 +198,7 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
 
         <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
-            <Button type="submit" disabled={totals.debit !== totals.credit || totals.debit === 0}>Guardar Póliza</Button>
+            <Button type="submit" disabled={!isBalanced || !hasAmounts}>Guardar Póliza</Button>
         </div>
       </form>
     </Form>
