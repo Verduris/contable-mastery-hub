@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import {
   Table,
@@ -9,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, User, Users } from "lucide-react";
+import { PlusCircle, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -23,13 +22,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddClientForm } from "@/components/AddClientForm";
+import { ClientDetails } from "@/components/ClientDetails";
 import { Client, AddClientFormData, ClientStatus } from "@/types/client";
 import { useToast } from "@/hooks/use-toast";
 import { initialClients } from "@/data/clients";
 
 const Clients = () => {
   const [clients, setClients] = useState<Client[]>(initialClients);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<ClientStatus | "Todos">("Todos");
   const { toast } = useToast();
@@ -37,14 +39,20 @@ const Clients = () => {
   const handleSaveClient = (newClientData: AddClientFormData) => {
     const newClient: Client = {
       id: (clients.length + 1).toString(),
+      balance: 0,
       ...newClientData
     };
     setClients([...clients, newClient]);
-    setIsDialogOpen(false);
+    setIsAddDialogOpen(false);
     toast({
         title: "¡Cliente agregado!",
         description: `El cliente "${newClient.name}" ha sido creado exitosamente.`,
     })
+  };
+  
+  const handleViewDetails = (client: Client) => {
+    setSelectedClient(client);
+    setIsDetailDialogOpen(true);
   };
 
   const filteredClients = useMemo(() => {
@@ -64,14 +72,14 @@ const Clients = () => {
             <CardTitle>Clientes</CardTitle>
             <CardDescription>Administra los clientes de tu negocio.</CardDescription>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Agregar Cliente
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent className="sm:max-w-3xl">
               <DialogHeader>
                 <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
                 <DialogDescription>
@@ -81,7 +89,7 @@ const Clients = () => {
               <AddClientForm 
                 clients={clients}
                 onSave={handleSaveClient} 
-                onCancel={() => setIsDialogOpen(false)}
+                onCancel={() => setIsAddDialogOpen(false)}
               />
             </DialogContent>
           </Dialog>
@@ -109,11 +117,11 @@ const Clients = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nombre / Razón Social</TableHead>
+              <TableHead className="w-[40%]">Nombre / Razón Social</TableHead>
               <TableHead>RFC</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Régimen Fiscal</TableHead>
               <TableHead>Estatus</TableHead>
+              <TableHead className="text-right">Saldo</TableHead>
+              <TableHead className="text-center">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -122,22 +130,30 @@ const Clients = () => {
                 <TableCell className="font-medium">{client.name}</TableCell>
                 <TableCell>{client.rfc}</TableCell>
                 <TableCell>
-                    <div className="flex items-center gap-2">
-                        {client.type === 'Física' ? <User className="h-4 w-4 text-muted-foreground" /> : <Users className="h-4 w-4 text-muted-foreground" />}
-                        <span>{client.type}</span>
-                    </div>
-                </TableCell>
-                <TableCell>{client.taxRegime}</TableCell>
-                <TableCell>
                   <Badge variant={client.status === 'Activo' ? 'default' : 'destructive'}>
                     {client.status}
                   </Badge>
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                    {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(client.balance)}
+                </TableCell>
+                <TableCell className="text-center">
+                  <Button variant="ghost" size="icon" onClick={() => handleViewDetails(client)}>
+                    <Eye className="h-4 w-4" />
+                    <span className="sr-only">Ver detalles</span>
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </CardContent>
+
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+            {selectedClient && <ClientDetails client={selectedClient} />}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

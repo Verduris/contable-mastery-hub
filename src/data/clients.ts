@@ -12,6 +12,11 @@ export const initialClients: Client[] = [
     status: 'Activo',
     taxRegime: 'Régimen General de Ley Personas Morales',
     address: 'Av. Insurgentes Sur 123, Roma Norte, CDMX',
+    associatedAccountId: '3',
+    creditDays: 30,
+    creditLimit: 50000,
+    balance: 15000,
+    internalNotes: 'Cliente prioritario. Facturar al momento de la entrega.',
   },
   {
     id: '2',
@@ -23,6 +28,11 @@ export const initialClients: Client[] = [
     status: 'Activo',
     taxRegime: 'Régimen Simplificado de Confianza',
     address: 'Calle Falsa 123, Colonia Centro, Puebla',
+    associatedAccountId: '3',
+    creditDays: 0,
+    creditLimit: 0,
+    balance: 0,
+    internalNotes: 'Pago contra entrega.',
   },
   {
     id: '3',
@@ -34,5 +44,9 @@ export const initialClients: Client[] = [
     status: 'Inactivo',
     taxRegime: 'Régimen General de Ley Personas Morales',
     address: 'Av. Lázaro Cárdenas 456, San Pedro, Monterrey',
+    associatedAccountId: '3',
+    creditDays: 60,
+    creditLimit: 100000,
+    balance: -5000,
   },
 ];

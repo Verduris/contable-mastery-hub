@@ -16,10 +16,13 @@ export type Client = {
   associatedAccountId?: string | null;
   paymentMethod?: string;
   creditDays?: number;
+  creditLimit?: number;
+  balance: number;
   internalNotes?: string;
+  contractUrl?: string;
 };
 
-export type AddClientFormData = Omit<Client, 'id' | 'taxRegime' | 'address'> & {
+export type AddClientFormData = Omit<Client, 'id' | 'taxRegime' | 'address' | 'balance' | 'contractUrl'> & {
   taxRegime: string;
   address: string;
 };
