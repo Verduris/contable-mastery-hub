@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Table,
@@ -9,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { MoreHorizontal, Edit, Copy, XCircle, PlusCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,6 +18,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { JournalEntryForm } from "@/components/JournalEntryForm";
 import { Account } from "@/types/account";
 import { JournalEntry, JournalEntryFormData } from "@/types/journal";
@@ -27,6 +34,7 @@ import { accounts as initialAccounts } from "@/data/accounts";
 import { journalEntries as initialJournalEntries } from "@/data/journalEntries"; // Using mock data for now
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 const JournalEntries = () => {
   const [accounts] = useState<Account[]>(initialAccounts);
@@ -54,6 +62,23 @@ const JournalEntries = () => {
         title: "¡Póliza guardada!",
         description: `La póliza "${newEntry.number}: ${newEntry.concept}" ha sido creada.`,
     })
+  };
+
+  const handleVoidEntry = (entryId: string) => {
+    setJournalEntries(currentEntries =>
+      currentEntries.map(entry =>
+        entry.id === entryId
+          ? { ...entry, status: 'Anulada' }
+          : entry
+      )
+    );
+    const voidedEntry = journalEntries.find(entry => entry.id === entryId);
+    if (voidedEntry) {
+      toast({
+        title: "¡Póliza Anulada!",
+        description: `La póliza "${voidedEntry.number}" ha sido marcada como anulada.`,
+      })
+    }
   };
 
   const getNextEntryNumber = () => {
@@ -106,20 +131,50 @@ const JournalEntries = () => {
               <TableHead>Concepto</TableHead>
               <TableHead>Estatus</TableHead>
               <TableHead className="text-right">Total</TableHead>
+              <TableHead><span className="sr-only">Acciones</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {journalEntries.map((entry) => (
-              <TableRow key={entry.id}>
+              <TableRow key={entry.id} className={cn(entry.status === 'Anulada' && 'text-muted-foreground')}>
                 <TableCell>{format(new Date(entry.date), 'dd/MMM/yyyy', { locale: es })}</TableCell>
                 <TableCell>{entry.type}</TableCell>
                 <TableCell className="font-medium">{entry.number}</TableCell>
                 <TableCell>{entry.concept}</TableCell>
                 <TableCell>
-                  <Badge>{entry.status}</Badge>
+                  <Badge variant={entry.status === 'Anulada' ? 'destructive' : 'secondary'}>{entry.status}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   {calculateTotal(entry.lines).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+                </TableCell>
+                <TableCell className="text-right">
+                   <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0" disabled={entry.status === 'Anulada'}>
+                        <span className="sr-only">Abrir menú</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                       <DropdownMenuItem disabled>
+                        <Edit className="mr-2 h-4 w-4" />
+                        <span>Ver/Editar</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem disabled>
+                        <Copy className="mr-2 h-4 w-4" />
+                        <span>Duplicar</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => handleVoidEntry(entry.id)}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        <span>Anular</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
