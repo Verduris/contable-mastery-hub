@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -96,7 +95,7 @@ export const AddAccountForm = ({ onSave, onCancel }: AddAccountFormProps) => {
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        <SelectItem value="Activo">Activo</sItem>
+                        <SelectItem value="Activo">Activo</SelectItem>
                         <SelectItem value="Pasivo">Pasivo</SelectItem>
                         <SelectItem value="Capital">Capital</SelectItem>
                         <SelectItem value="Ingresos">Ingresos</SelectItem>
