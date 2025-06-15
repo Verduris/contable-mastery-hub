@@ -12,7 +12,9 @@ import { es } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { journalEntries } from '@/data/journalEntries';
+import { useQuery } from '@tanstack/react-query';
+import { fetchJournalEntries } from '@/queries/journalEntries';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const chartConfig = {
   income: {
@@ -28,6 +30,10 @@ const chartConfig = {
 const IncomeStatementReport = () => {
     const { toast } = useToast();
     const [date, setDate] = useState<DateRange | undefined>();
+    const { data: journalEntries = [], isLoading } = useQuery({
+      queryKey: ['journalEntries'],
+      queryFn: () => fetchJournalEntries()
+    });
 
     const formatCurrency = (value: number) => {
         return value.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
@@ -78,7 +84,7 @@ const IncomeStatementReport = () => {
         }) : [];
 
         return { totalIncome, totalExpenses, netProfit, chartData };
-    }, [date]);
+    }, [date, journalEntries]);
 
     const handleDownload = () => {
         toast({
@@ -96,7 +102,7 @@ const IncomeStatementReport = () => {
                             <CardTitle>Estado de Resultados Simplificado</CardTitle>
                             <CardDescription>Analiza tus ingresos, egresos y la utilidad neta en un periodo determinado.</CardDescription>
                         </div>
-                        <Button onClick={handleDownload} variant="outline">
+                        <Button onClick={handleDownload} variant="outline" disabled={isLoading}>
                             <Download className="mr-2 h-4 w-4" />
                             Exportar a PDF
                         </Button>
@@ -112,6 +118,7 @@ const IncomeStatementReport = () => {
                                         "w-full md:w-[300px] justify-start text-left font-normal",
                                         !date && "text-muted-foreground"
                                     )}
+                                    disabled={isLoading}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {date?.from ? (
@@ -139,7 +146,7 @@ const IncomeStatementReport = () => {
                                 />
                             </PopoverContent>
                         </Popover>
-                        <Button onClick={() => { setDate(undefined); }}>Limpiar Filtros</Button>
+                        <Button onClick={() => { setDate(undefined); }} disabled={isLoading}>Limpiar Filtros</Button>
                     </div>
                     
                     <div className="grid gap-4 md:grid-cols-3">
@@ -148,7 +155,7 @@ const IncomeStatementReport = () => {
                                 <CardTitle className="text-sm font-medium">Total Ingresos</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-green-600">{formatCurrency(processedData.totalIncome)}</div>
+                                {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold text-green-600">{formatCurrency(processedData.totalIncome)}</div>}
                             </CardContent>
                         </Card>
                          <Card>
@@ -156,7 +163,7 @@ const IncomeStatementReport = () => {
                                 <CardTitle className="text-sm font-medium">Total Egresos</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-red-600">{formatCurrency(processedData.totalExpenses)}</div>
+                                {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold text-red-600">{formatCurrency(processedData.totalExpenses)}</div>}
                             </CardContent>
                         </Card>
                          <Card>
@@ -164,7 +171,7 @@ const IncomeStatementReport = () => {
                                 <CardTitle className="text-sm font-medium">Utilidad Neta</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className={`text-2xl font-bold ${processedData.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(processedData.netProfit)}</div>
+                                {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className={`text-2xl font-bold ${processedData.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(processedData.netProfit)}</div>}
                             </CardContent>
                         </Card>
                     </div>
@@ -177,26 +184,32 @@ const IncomeStatementReport = () => {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                             <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
-                                <LineChart accessibilityLayer data={processedData.chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                                    <CartesianGrid vertical={false} />
-                                    <XAxis
-                                        dataKey="name"
-                                        tickLine={false}
-                                        tickMargin={10}
-                                        axisLine={false}
-                                    />
-                                    <YAxis
-                                        tickFormatter={(value) => `$${(value as number / 1000)}k`}
-                                        axisLine={false}
-                                        tickLine={false}
-                                    />
-                                    <Tooltip content={<ChartTooltipContent />} />
-                                    <Legend />
-                                    <Line type="monotone" dataKey="income" name="Ingresos" stroke="var(--color-income)" strokeWidth={2} dot={true} />
-                                    <Line type="monotone" dataKey="expenses" name="Egresos" stroke="var(--color-expenses)" strokeWidth={2} dot={true} />
-                                </LineChart>
-                            </ChartContainer>
+                             {isLoading ? (
+                                <div className="flex justify-center items-center min-h-[300px]">
+                                    <Skeleton className="h-[300px] w-full" />
+                                </div>
+                             ) : (
+                                <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+                                    <LineChart accessibilityLayer data={processedData.chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                                        <CartesianGrid vertical={false} />
+                                        <XAxis
+                                            dataKey="name"
+                                            tickLine={false}
+                                            tickMargin={10}
+                                            axisLine={false}
+                                        />
+                                        <YAxis
+                                            tickFormatter={(value) => `$${(value as number / 1000)}k`}
+                                            axisLine={false}
+                                            tickLine={false}
+                                        />
+                                        <Tooltip content={<ChartTooltipContent />} />
+                                        <Legend />
+                                        <Line type="monotone" dataKey="income" name="Ingresos" stroke="var(--color-income)" strokeWidth={2} dot={true} />
+                                        <Line type="monotone" dataKey="expenses" name="Egresos" stroke="var(--color-expenses)" strokeWidth={2} dot={true} />
+                                    </LineChart>
+                                </ChartContainer>
+                             )}
                         </CardContent>
                     </Card>
 
