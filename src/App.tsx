@@ -18,6 +18,7 @@ import CourseDetail from "./pages/CourseDetail";
 import NotFound from "./pages/NotFound";
 import IncomeByClientReport from "./pages/reports/IncomeByClientReport";
 import ClientStatement from "./pages/ClientStatement";
+import BankReconciliation from "./pages/BankReconciliation";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/agenda" element={<TaxCalendar />} />
             <Route path="/aprendizaje" element={<LearningCenter />} />
             <Route path="/aprendizaje/:courseId" element={<CourseDetail />} />
+            <Route path="/conciliacion-bancaria" element={<BankReconciliation />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
