@@ -1,9 +1,8 @@
+
 import { useState, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AccountReceivable, AccountReceivableStatus } from '@/types/receivable';
-import { initialReceivables } from '@/data/receivables';
-import { initialClients } from '@/data/clients';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInDays, format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -13,9 +12,19 @@ import { ReceivablesHeader } from '@/components/receivables/ReceivablesHeader';
 import { ReceivablesTable } from '@/components/receivables/ReceivablesTable';
 import { PaymentDialog } from '@/components/receivables/PaymentDialog';
 import { DetailsDialog } from '@/components/receivables/DetailsDialog';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchReceivables, recordPayment, markAsPaid } from '@/queries/receivables';
+import { fetchClients } from '@/queries/clients';
+import { Client } from '@/types/client';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 
 const AccountsReceivable = () => {
-  const [receivables, setReceivables] = useState<AccountReceivable[]>(initialReceivables);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
   const [clientFilter, setClientFilter] = useState<string>("Todos");
   const [statusFilter, setStatusFilter] = useState<AccountReceivableStatus | "Todos">("Todos");
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -23,9 +32,15 @@ const AccountsReceivable = () => {
   const [selectedReceivable, setSelectedReceivable] = useState<AccountReceivable | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
 
-  const { toast } = useToast();
+  const { data: receivables = [], isLoading: isLoadingReceivables, isError: isReceivablesError, error: receivablesError } = useQuery({
+    queryKey: ['receivables'],
+    queryFn: fetchReceivables,
+  });
 
-  const clientData = useMemo(() => new Map(initialClients.map(c => [c.id, c])), []);
+  const { data: clients = [], isLoading: isLoadingClients } = useQuery({
+    queryKey: ['clients'],
+    queryFn: fetchClients,
+  });
   
   const clientTotalOutstanding = useMemo(() => {
     const totals = new Map<string, number>();
@@ -46,29 +61,32 @@ const AccountsReceivable = () => {
     }).sort((a, b) => differenceInDays(parseISO(a.dueDate), parseISO(b.dueDate)));
   }, [receivables, clientFilter, statusFilter]);
 
-  const handleMarkAsPaid = (receivableId: string) => {
-    setReceivables(prev => prev.map(r => {
-      if (r.id === receivableId) {
-        const paymentAmount = r.totalAmount - r.paidAmount;
-        const newPayment = paymentAmount > 0 ? [{
-            id: `pay-${Date.now()}`,
-            date: new Date().toISOString(),
-            amount: paymentAmount,
-            notes: 'Pago de saldo restante para marcar como pagada.'
-        }] : [];
-        const updatedPaymentHistory = [...(r.paymentHistory || []), ...newPayment];
+  const markAsPaidMutation = useMutation({
+    mutationFn: markAsPaid,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['receivables'] });
+      toast({ title: "Cuenta marcada como pagada", description: "El estado de la cuenta ha sido actualizado." });
+    },
+    onError: (error: Error) => {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
 
-        return { 
-          ...r, 
-          status: 'Pagada', 
-          paidAmount: r.totalAmount, 
-          outstandingBalance: 0,
-          paymentHistory: updatedPaymentHistory
-        };
-      }
-      return r;
-    }));
-    toast({ title: "Cuenta marcada como pagada", description: "El estado de la cuenta ha sido actualizado." });
+  const recordPaymentMutation = useMutation({
+    mutationFn: ({ receivableId, amount, date }: { receivableId: string, amount: number, date: string }) => 
+        recordPayment(receivableId, amount, date),
+    onSuccess: (_, variables) => {
+        queryClient.invalidateQueries({ queryKey: ['receivables'] });
+        toast({ title: "Cobro registrado", description: `Se ha registrado un pago por ${variables.amount.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}.` });
+        handlePaymentDialogClose(false);
+    },
+    onError: (error: Error) => {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const handleMarkAsPaid = (receivableId: string) => {
+    markAsPaidMutation.mutate(receivableId);
   };
 
   const openPaymentDialog = (receivable: AccountReceivable) => {
@@ -92,37 +110,11 @@ const AccountsReceivable = () => {
 
   const handleRecordPayment = () => {
     if (!selectedReceivable || paymentAmount <= 0) return;
-
-    setReceivables(prev => prev.map(r => {
-      if (r.id === selectedReceivable.id) {
-        const newPaidAmount = r.paidAmount + paymentAmount;
-        const newOutstandingBalance = r.totalAmount - newPaidAmount;
-        let newStatus: AccountReceivableStatus = 'Parcialmente Pagada';
-        if (newOutstandingBalance <= 0) {
-          newStatus = 'Pagada';
-        } else if (differenceInDays(new Date(), parseISO(r.dueDate)) > 0) {
-            newStatus = 'Vencida';
-        }
-        
-        const newPayment = {
-            id: `pay-${Date.now()}`,
-            date: new Date().toISOString(),
-            amount: paymentAmount,
-        };
-        const updatedPaymentHistory = [...(r.paymentHistory || []), newPayment];
-
-        return {
-          ...r,
-          paidAmount: newPaidAmount,
-          outstandingBalance: newOutstandingBalance,
-          status: newStatus,
-          paymentHistory: updatedPaymentHistory,
-        };
-      }
-      return r;
-    }));
-    toast({ title: "Cobro registrado", description: `Se ha registrado un pago por ${paymentAmount.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}.` });
-    handlePaymentDialogClose(false);
+    recordPaymentMutation.mutate({
+      receivableId: selectedReceivable.id,
+      amount: paymentAmount,
+      date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+    });
   };
 
   const handleExportPDF = () => {
@@ -134,7 +126,7 @@ const AccountsReceivable = () => {
 
     filteredReceivables.forEach(r => {
       const receivableData = [
-        clientData.get(r.clientId)?.name || 'N/A',
+        r.client?.name || 'N/A',
         format(parseISO(r.dueDate), 'dd/MMM/yy', { locale: es }),
         r.outstandingBalance.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' }),
         r.status
@@ -159,10 +151,73 @@ const AccountsReceivable = () => {
     }
   }
 
+  const renderTableContent = () => {
+    if (isLoadingReceivables) {
+      return (
+        <TableBody>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <TableRow key={i}>
+              <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+              <TableCell className="text-center"><Skeleton className="h-5 w-10 mx-auto" /></TableCell>
+              <TableCell className="text-right"><Skeleton className="h-5 w-28 ml-auto" /></TableCell>
+              <TableCell className="text-right"><Skeleton className="h-5 w-28 ml-auto" /></TableCell>
+              <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+              <TableCell className="text-center"><Skeleton className="h-8 w-8 mx-auto" /></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      );
+    }
+
+    if (isReceivablesError) {
+      return (
+        <TableBody>
+          <TableRow>
+            <TableCell colSpan={8} className="py-10 text-center">
+              <Alert variant="destructive" className="max-w-md mx-auto">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Error al Cargar Cuentas</AlertTitle>
+                <AlertDescription>
+                  {receivablesError instanceof Error ? receivablesError.message : "Ocurrió un error inesperado."}
+                </AlertDescription>
+              </Alert>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      );
+    }
+    
+    if (filteredReceivables.length === 0) {
+      return (
+        <TableBody>
+          <TableRow>
+            <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+              No hay cuentas por cobrar que coincidan con los filtros seleccionados.
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      );
+    }
+
+    return (
+      <ReceivablesTable 
+        receivables={filteredReceivables}
+        clientTotalOutstanding={clientTotalOutstanding}
+        openDetailsDialog={openDetailsDialog}
+        openPaymentDialog={openPaymentDialog}
+        handleMarkAsPaid={handleMarkAsPaid}
+      />
+    );
+  };
+
   return (
     <TooltipProvider>
       <Card>
         <ReceivablesHeader 
+          clients={clients}
+          isLoadingClients={isLoadingClients}
           clientFilter={clientFilter}
           setClientFilter={setClientFilter}
           statusFilter={statusFilter}
@@ -170,14 +225,7 @@ const AccountsReceivable = () => {
           handleExportPDF={handleExportPDF}
         />
         <CardContent>
-          <ReceivablesTable 
-            receivables={filteredReceivables}
-            clientData={clientData}
-            clientTotalOutstanding={clientTotalOutstanding}
-            openDetailsDialog={openDetailsDialog}
-            openPaymentDialog={openPaymentDialog}
-            handleMarkAsPaid={handleMarkAsPaid}
-          />
+          {renderTableContent()}
         </CardContent>
       </Card>
 
@@ -185,7 +233,6 @@ const AccountsReceivable = () => {
         isOpen={isPaymentDialogOpen}
         onOpenChange={handlePaymentDialogClose}
         receivable={selectedReceivable}
-        clientData={clientData}
         paymentAmount={paymentAmount}
         onPaymentAmountChange={setPaymentAmount}
         onRecordPayment={handleRecordPayment}
@@ -195,7 +242,6 @@ const AccountsReceivable = () => {
         isOpen={isDetailsDialogOpen}
         onOpenChange={handleDetailsDialogClose}
         receivable={selectedReceivable}
-        clientData={clientData}
       />
     </TooltipProvider>
   );

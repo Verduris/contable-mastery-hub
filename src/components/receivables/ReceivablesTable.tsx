@@ -21,7 +21,6 @@ import { getStatusInfo, getBadgeVariant } from '@/utils/receivableUtils';
 
 interface ReceivablesTableProps {
   receivables: AccountReceivable[];
-  clientData: Map<string, Client>;
   clientTotalOutstanding: Map<string, number>;
   openDetailsDialog: (receivable: AccountReceivable) => void;
   openPaymentDialog: (receivable: AccountReceivable) => void;
@@ -30,7 +29,6 @@ interface ReceivablesTableProps {
 
 export const ReceivablesTable = ({
   receivables,
-  clientData,
   clientTotalOutstanding,
   openDetailsDialog,
   openPaymentDialog,
@@ -54,7 +52,7 @@ export const ReceivablesTable = ({
         {receivables.map((r) => {
           const statusInfo = getStatusInfo(r);
           const daysDiff = differenceInDays(parseISO(r.dueDate), new Date());
-          const client = clientData.get(r.clientId);
+          const client = r.client;
           const totalOutstanding = clientTotalOutstanding.get(r.clientId) || 0;
           const creditLimitExceeded = client && client.creditLimit && client.creditLimit > 0 && totalOutstanding > client.creditLimit;
 
@@ -66,7 +64,7 @@ export const ReceivablesTable = ({
                   {creditLimitExceeded && (
                     <Tooltip>
                       <TooltipTrigger>
-                        <AlertTriangle className="text-destructive" />
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>Límite de crédito excedido.</p>
@@ -98,18 +96,18 @@ export const ReceivablesTable = ({
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-8 w-8 p-0" disabled={r.status === 'Pagada'}>
                       <span className="sr-only">Abrir menú</span>
-                      <MoreHorizontal />
+                      <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                      <DropdownMenuItem onClick={() => openDetailsDialog(r)}>
-                      <FileText className="mr-2" /> Ver Detalles
+                      <FileText className="mr-2 h-4 w-4" /> Ver Detalles
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => openPaymentDialog(r)}>
-                      <Wallet className="mr-2" /> Registrar Cobro
+                      <Wallet className="mr-2 h-4 w-4" /> Registrar Cobro
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleMarkAsPaid(r.id)}>
-                      <CircleCheck className="mr-2" /> Marcar como Pagada
+                      <CircleCheck className="mr-2 h-4 w-4" /> Marcar como Pagada
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

@@ -62,6 +62,56 @@ export type Database = {
           },
         ]
       }
+      accounts_receivable: {
+        Row: {
+          client_id: string
+          created_at: string
+          due_date: string
+          id: string
+          invoice_id: string | null
+          issue_date: string
+          notes: string | null
+          outstanding_balance: number | null
+          paid_amount: number
+          status: Database["public"]["Enums"]["account_receivable_status"]
+          total_amount: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          invoice_id?: string | null
+          issue_date: string
+          notes?: string | null
+          outstanding_balance?: number | null
+          paid_amount?: number
+          status?: Database["public"]["Enums"]["account_receivable_status"]
+          total_amount: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          invoice_id?: string | null
+          issue_date?: string
+          notes?: string | null
+          outstanding_balance?: number | null
+          paid_amount?: number
+          status?: Database["public"]["Enums"]["account_receivable_status"]
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_receivable_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_audit_logs: {
         Row: {
           action: string
@@ -252,6 +302,41 @@ export type Database = {
           },
         ]
       }
+      receivable_payments: {
+        Row: {
+          account_receivable_id: string
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          account_receivable_id: string
+          amount: number
+          created_at?: string
+          date: string
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          account_receivable_id?: string
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receivable_payments_account_receivable_id_fkey"
+            columns: ["account_receivable_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_receivable"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tax_events: {
         Row: {
           created_at: string
@@ -299,6 +384,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      mark_receivable_as_paid: {
+        Args: { p_receivable_id: string }
+        Returns: undefined
+      }
+      record_receivable_payment: {
+        Args: {
+          p_receivable_id: string
+          p_amount: number
+          p_date: string
+          p_notes: string
+        }
+        Returns: undefined
+      }
       upsert_journal_entry: {
         Args: {
           entry_id: string
@@ -316,6 +414,11 @@ export type Database = {
     }
     Enums: {
       account_nature: "Deudora" | "Acreedora"
+      account_receivable_status:
+        | "Pendiente"
+        | "Pagada"
+        | "Vencida"
+        | "Parcialmente Pagada"
       account_status: "Activa" | "Inactiva"
       account_type: "Activo" | "Pasivo" | "Capital" | "Ingresos" | "Egresos"
       client_status: "Activo" | "Inactivo"
@@ -439,6 +542,12 @@ export const Constants = {
   public: {
     Enums: {
       account_nature: ["Deudora", "Acreedora"],
+      account_receivable_status: [
+        "Pendiente",
+        "Pagada",
+        "Vencida",
+        "Parcialmente Pagada",
+      ],
       account_status: ["Activa", "Inactiva"],
       account_type: ["Activo", "Pasivo", "Capital", "Ingresos", "Egresos"],
       client_status: ["Activo", "Inactivo"],

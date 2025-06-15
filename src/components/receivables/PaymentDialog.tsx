@@ -16,7 +16,6 @@ interface PaymentDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   receivable: AccountReceivable | null;
-  clientData: Map<string, Client>;
   paymentAmount: number;
   onPaymentAmountChange: (amount: number) => void;
   onRecordPayment: () => void;
@@ -26,7 +25,6 @@ export const PaymentDialog = ({
   isOpen,
   onOpenChange,
   receivable,
-  clientData,
   paymentAmount,
   onPaymentAmountChange,
   onRecordPayment,
@@ -39,7 +37,7 @@ export const PaymentDialog = ({
         <DialogHeader>
           <DialogTitle>Registrar Cobro</DialogTitle>
           <DialogDescription>
-            Cliente: {clientData.get(receivable.clientId)?.name}
+            Cliente: {receivable.client?.name}
             <br />
             Saldo pendiente: {receivable.outstandingBalance.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
           </DialogDescription>

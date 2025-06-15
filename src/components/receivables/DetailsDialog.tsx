@@ -18,14 +18,12 @@ interface DetailsDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   receivable: AccountReceivable | null;
-  clientData: Map<string, Client>;
 }
 
 export const DetailsDialog = ({
   isOpen,
   onOpenChange,
   receivable,
-  clientData,
 }: DetailsDialogProps) => {
   if (!receivable) return null;
 
@@ -35,7 +33,7 @@ export const DetailsDialog = ({
         <DialogHeader>
           <DialogTitle>Detalles de la Cuenta por Cobrar</DialogTitle>
           <DialogDescription>
-            Cliente: {clientData.get(receivable.clientId)?.name}
+            Cliente: {receivable.client?.name}
             <br />
             Factura ID: {receivable.invoiceId || 'N/A'}
           </DialogDescription>
@@ -62,7 +60,7 @@ export const DetailsDialog = ({
                       <TableRow key={p.id}>
                         <TableCell>{format(parseISO(p.date), 'dd/MMM/yyyy', { locale: es })}</TableCell>
                         <TableCell className="text-muted-foreground">{p.notes || ''}</TableCell>
-                        <TableCell className="text-right font-mono">{p.amount.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</TableCell>
+                        <TableCell className="text-right font-mono">{p.amount.toLocaleString('es-MX', { style: 'currency', 'currency': 'MXN' })}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

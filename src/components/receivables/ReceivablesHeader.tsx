@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileDown } from "lucide-react";
-import { initialClients } from '@/data/clients';
 import { AccountReceivableStatus } from "@/types/receivable";
+import { Client } from "@/types/client";
 
 interface ReceivablesHeaderProps {
+  clients: Client[];
+  isLoadingClients: boolean;
   clientFilter: string;
   setClientFilter: (value: string) => void;
   statusFilter: AccountReceivableStatus | "Todos";
@@ -15,6 +17,8 @@ interface ReceivablesHeaderProps {
 }
 
 export const ReceivablesHeader = ({
+  clients,
+  isLoadingClients,
   clientFilter,
   setClientFilter,
   statusFilter,
@@ -29,17 +33,17 @@ export const ReceivablesHeader = ({
           <CardDescription>Gestiona y da seguimiento a los cobros pendientes.</CardDescription>
         </div>
         <Button onClick={handleExportPDF} variant="outline">
-            <FileDown className="mr-2" /> Exportar a PDF
+            <FileDown className="mr-2 h-4 w-4" /> Exportar a PDF
         </Button>
       </div>
       <div className="mt-4 flex flex-col md:flex-row items-center gap-4">
-        <Select value={clientFilter} onValueChange={setClientFilter}>
+        <Select value={clientFilter} onValueChange={setClientFilter} disabled={isLoadingClients}>
           <SelectTrigger className="w-full md:w-[240px]">
             <SelectValue placeholder="Filtrar por cliente" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="Todos">Todos los clientes</SelectItem>
-            {initialClients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>

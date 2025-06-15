@@ -1,11 +1,13 @@
 
 import { Payment } from './payment';
+import { Client } from './client';
 
 export type AccountReceivableStatus = 'Pendiente' | 'Pagada' | 'Vencida' | 'Parcialmente Pagada';
 
 export type AccountReceivable = {
   id: string;
   clientId: string;
+  client?: Partial<Client>;
   invoiceId?: string;
   issueDate: string; // ISO date string
   dueDate: string; // ISO date string
