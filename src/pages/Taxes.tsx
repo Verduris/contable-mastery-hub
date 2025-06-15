@@ -35,7 +35,8 @@ const taxFeatures: TaxFeature[] = [
         title: "Calculadora de Días Hábiles Fiscales",
         description: "Calcula plazos de vencimiento considerando días inhábiles oficiales. (Art. 12, 13 CFF)",
         icon: <Calculator className="h-6 w-6 text-primary" />,
-        status: "coming_soon",
+        status: "available",
+        href: "/calculadora-dias-habiles",
     },
     {
         title: "Visor de Declaraciones Presentadas",
