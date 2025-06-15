@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -50,7 +49,22 @@ const AccountsReceivable = () => {
   const handleMarkAsPaid = (receivableId: string) => {
     setReceivables(prev => prev.map(r => {
       if (r.id === receivableId) {
-        return { ...r, status: 'Pagada', paidAmount: r.totalAmount, outstandingBalance: 0 };
+        const paymentAmount = r.totalAmount - r.paidAmount;
+        const newPayment = paymentAmount > 0 ? [{
+            id: `pay-${Date.now()}`,
+            date: new Date().toISOString(),
+            amount: paymentAmount,
+            notes: 'Pago de saldo restante para marcar como pagada.'
+        }] : [];
+        const updatedPaymentHistory = [...(r.paymentHistory || []), ...newPayment];
+
+        return { 
+          ...r, 
+          status: 'Pagada', 
+          paidAmount: r.totalAmount, 
+          outstandingBalance: 0,
+          paymentHistory: updatedPaymentHistory
+        };
       }
       return r;
     }));

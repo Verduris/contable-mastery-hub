@@ -17,6 +17,7 @@ export const initialPayables: AccountPayable[] = [
     notes: 'Factura de hosting anual #HOST-001.',
     paymentMethod: 'Transferencia',
     associatedAccountId: '9', // Gastos de Administración
+    paymentHistory: [],
   },
   {
     id: 'cxp-2',
@@ -30,6 +31,7 @@ export const initialPayables: AccountPayable[] = [
     notes: 'Factura por servicios de diseño #DSGN-050.',
     paymentMethod: 'Transferencia',
     associatedAccountId: '10', // Costo de Ventas
+    paymentHistory: [],
   },
   {
     id: 'cxp-3',
@@ -41,6 +43,9 @@ export const initialPayables: AccountPayable[] = [
     outstandingBalance: 0,
     status: 'Pagada',
     notes: 'Factura de campaña publicitaria #MKT-MAY-24.',
+    paymentHistory: [
+      { id: 'pay-p-1', date: subDays(today, 5).toISOString(), amount: 22000, notes: 'Pago completo' }
+    ],
   },
   {
     id: 'cxp-4',
@@ -52,5 +57,8 @@ export const initialPayables: AccountPayable[] = [
     outstandingBalance: 2500,
     status: 'Parcialmente Pagada',
     notes: 'Abono a factura #SOFT-LIC-12.',
+    paymentHistory: [
+      { id: 'pay-p-2', date: subDays(today, 8).toISOString(), amount: 2500, notes: 'Abono inicial' }
+    ],
   },
 ];

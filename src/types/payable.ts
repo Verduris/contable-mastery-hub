@@ -1,4 +1,6 @@
 
+import { Payment } from './payment';
+
 export type AccountPayableStatus = 'Pendiente' | 'Pagada' | 'Vencida' | 'Parcialmente Pagada';
 
 export type AccountPayable = {
@@ -14,4 +16,5 @@ export type AccountPayable = {
   notes?: string;
   paymentMethod?: string;
   associatedAccountId?: string;
+  paymentHistory?: Payment[];
 };

@@ -39,7 +39,22 @@ const AccountsPayable = () => {
   const handleMarkAsPaid = (payableId: string) => {
     setPayables(prev => prev.map(p => {
       if (p.id === payableId) {
-        return { ...p, status: 'Pagada', paidAmount: p.totalAmount, outstandingBalance: 0 };
+        const paymentAmount = p.totalAmount - p.paidAmount;
+        const newPayment = paymentAmount > 0 ? [{
+            id: `pay-p-${Date.now()}`,
+            date: new Date().toISOString(),
+            amount: paymentAmount,
+            notes: 'Pago de saldo restante para marcar como pagada.'
+        }] : [];
+        const updatedPaymentHistory = [...(p.paymentHistory || []), ...newPayment];
+        
+        return { 
+          ...p, 
+          status: 'Pagada', 
+          paidAmount: p.totalAmount, 
+          outstandingBalance: 0,
+          paymentHistory: updatedPaymentHistory,
+        };
       }
       return p;
     }));
@@ -64,11 +79,20 @@ const AccountsPayable = () => {
         } else if (differenceInDays(new Date(), parseISO(p.dueDate)) > 0) {
             newStatus = 'Vencida';
         }
+        
+        const newPayment = {
+            id: `pay-p-${Date.now()}`,
+            date: new Date().toISOString(),
+            amount: paymentAmount,
+        };
+        const updatedPaymentHistory = [...(p.paymentHistory || []), newPayment];
+
         return {
           ...p,
           paidAmount: newPaidAmount,
           outstandingBalance: newOutstandingBalance,
           status: newStatus,
+          paymentHistory: updatedPaymentHistory,
         };
       }
       return p;
@@ -89,6 +113,7 @@ const AccountsPayable = () => {
       outstandingBalance: data.totalAmount,
       status: 'Pendiente',
       notes: data.notes,
+      paymentHistory: [],
     };
 
     if (differenceInDays(parseISO(newPayable.dueDate), new Date()) < 0) {
@@ -135,8 +160,8 @@ const AccountsPayable = () => {
               <CardDescription>Gestiona y da seguimiento a los pagos a proveedores.</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={handleExportPDF}><FileDown /> Exportar PDF</Button>
-              <Button onClick={() => setIsAddDialogOpen(true)}><PlusCircle /> Registrar CXP</Button>
+              <Button variant="outline" onClick={handleExportPDF}><FileDown className="mr-2 h-4 w-4" /> Exportar PDF</Button>
+              <Button onClick={() => setIsAddDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4" /> Registrar CXP</Button>
             </div>
           </div>
           <PayablesFilters 

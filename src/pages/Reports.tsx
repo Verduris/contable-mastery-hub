@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowRight, BarChart, LineChart } from 'lucide-react';
@@ -20,6 +19,12 @@ const reports = [
         title: 'Estado de Resultados Simplificado',
         description: 'Analiza tus ingresos, egresos y la utilidad neta en un periodo determinado.',
         link: '/reportes/estado-de-resultados',
+        icon: <LineChart className="w-6 h-6 text-primary" />,
+    },
+    {
+        title: 'Flujo de Caja',
+        description: 'Visualiza entradas (cobranzas) y salidas (pagos) en el tiempo.',
+        link: '/reportes/flujo-de-caja',
         icon: <LineChart className="w-6 h-6 text-primary" />,
     },
     // Futuros reportes se pueden agregar aquí
