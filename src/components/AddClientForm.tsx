@@ -49,7 +49,8 @@ export const AddClientForm = ({ clients, onSave, onCancel }: AddClientFormProps)
     internalNotes: z.string().optional(),
   }).transform(data => ({
       ...data,
-      rfc: data.rfc.toUpperCase()
+      rfc: data.rfc.toUpperCase(),
+      associatedAccountId: data.associatedAccountId === 'null' ? null : data.associatedAccountId,
   }));
   
   const form = useForm<AddClientFormData>({
