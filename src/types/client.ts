@@ -1,4 +1,3 @@
-
 export type ClientStatus = 'Activo' | 'Inactivo';
 export type PersonType = 'Física' | 'Moral';
 
@@ -25,4 +24,13 @@ export type Client = {
 export type AddClientFormData = Omit<Client, 'id' | 'taxRegime' | 'address' | 'balance' | 'contractUrl'> & {
   taxRegime: string;
   address: string;
+};
+
+export type AuditLogEvent = {
+  id: string;
+  clientId: string;
+  timestamp: string; // ISO date string
+  user: string;
+  action: string;
+  details?: string;
 };

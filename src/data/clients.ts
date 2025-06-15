@@ -1,4 +1,3 @@
-
 import { Client } from '@/types/client';
 
 export const initialClients: Client[] = [
@@ -17,6 +16,7 @@ export const initialClients: Client[] = [
     creditLimit: 50000,
     balance: 15000,
     internalNotes: 'Cliente prioritario. Facturar al momento de la entrega.',
+    contractUrl: '/placeholder-document.pdf',
   },
   {
     id: '2',
