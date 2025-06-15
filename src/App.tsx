@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +24,13 @@ import IncomeStatementReport from "./pages/reports/IncomeStatementReport";
 import CashFlowReport from "./pages/reports/CashFlowReport";
 import RankingReport from './pages/reports/RankingReport';
 import AgingReport from './pages/reports/AgingReport';
+
+import ModuleCourses from "./pages/learning/ModuleCourses";
+import FiscalGuide from "./pages/learning/FiscalGuide";
+import Simulators from "./pages/learning/Simulators";
+import Dictionary from "./pages/learning/Dictionary";
+import CaseStudies from "./pages/learning/CaseStudies";
+import LearningProgress from "./pages/learning/Progress";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +63,12 @@ const App = () => (
             <Route path="/impuestos" element={<Taxes />} />
             <Route path="/agenda" element={<TaxCalendar />} />
             <Route path="/aprendizaje" element={<LearningCenter />} />
+            <Route path="/aprendizaje/modulos" element={<ModuleCourses />} />
+            <Route path="/aprendizaje/guia-fiscal" element={<FiscalGuide />} />
+            <Route path="/aprendizaje/simuladores" element={<Simulators />} />
+            <Route path="/aprendizaje/diccionario" element={<Dictionary />} />
+            <Route path="/aprendizaje/casos-practicos" element={<CaseStudies />} />
+            <Route path="/aprendizaje/progreso" element={<LearningProgress />} />
             <Route path="/aprendizaje/:courseId" element={<CourseDetail />} />
             <Route path="/conciliacion-bancaria" element={<BankReconciliation />} />
             <Route path="*" element={<NotFound />} />
