@@ -1,8 +1,9 @@
-
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { XMLParser } from "fast-xml-parser";
+import { Loader } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -23,6 +24,7 @@ import {
 import { Client } from "@/types/client";
 import { Invoice, SatStatus } from "@/types/invoice";
 import { useToast } from "@/hooks/use-toast";
+import { validateSatStatus } from "@/utils/satApi";
 
 const formSchema = z.object({
   clientId: z.string().min(1, "Debes seleccionar un cliente."),
@@ -45,6 +47,7 @@ interface AddInvoiceFormProps {
 
 export const AddInvoiceForm = ({ clients, onSave, onCancel }: AddInvoiceFormProps) => {
   const { toast } = useToast();
+  const [isVerifying, setIsVerifying] = useState(false);
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -64,7 +67,7 @@ export const AddInvoiceForm = ({ clients, onSave, onCancel }: AddInvoiceFormProp
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const xmlText = e.target?.result as string;
         const parser = new XMLParser({
@@ -92,6 +95,12 @@ export const AddInvoiceForm = ({ clients, onSave, onCancel }: AddInvoiceFormProp
         const cfdiUse = receptor['@_UsoCFDI'];
         const receptorRfc = receptor['@_Rfc'];
 
+        form.setValue('uuid', uuid);
+        form.setValue('date', new Date(date).toISOString());
+        form.setValue('amount', amount);
+        form.setValue('cfdiUse', cfdiUse);
+        form.clearErrors('xmlFile');
+
         const matchedClient = clients.find(c => c.rfc === receptorRfc);
         if (matchedClient) {
           form.setValue('clientId', matchedClient.id);
@@ -103,11 +112,24 @@ export const AddInvoiceForm = ({ clients, onSave, onCancel }: AddInvoiceFormProp
             })
         }
 
-        form.setValue('uuid', uuid);
-        form.setValue('date', new Date(date).toISOString());
-        form.setValue('amount', amount);
-        form.setValue('cfdiUse', cfdiUse);
-        form.clearErrors('xmlFile');
+        setIsVerifying(true);
+        try {
+          const status = await validateSatStatus(uuid);
+          form.setValue('satStatus', status);
+          toast({
+            title: "Estatus SAT Verificado",
+            description: `El estatus de la factura en el SAT es: ${status}.`,
+            variant: status === 'Vigente' ? 'default' : 'destructive'
+          });
+        } catch (error) {
+           toast({
+            variant: "destructive",
+            title: "Error de Validación SAT",
+            description: "No se pudo verificar el estatus con el SAT. Por favor, selecciónalo manualmente.",
+          });
+        } finally {
+            setIsVerifying(false);
+        }
 
       } catch (error: any) {
         toast({
@@ -116,7 +138,6 @@ export const AddInvoiceForm = ({ clients, onSave, onCancel }: AddInvoiceFormProp
           description: error.message || "El archivo no parece ser un CFDI válido.",
         });
         form.reset();
-        form.setValue('xmlFile', new DataTransfer().files);
       }
     };
     reader.onerror = () => {
@@ -188,17 +209,20 @@ export const AddInvoiceForm = ({ clients, onSave, onCancel }: AddInvoiceFormProp
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Estatus SAT</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                    <FormControl>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Estatus en el SAT" />
-                    </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        <SelectItem value="Vigente">Vigente</SelectItem>
-                        <SelectItem value="Cancelada">Cancelada</SelectItem>
-                    </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value} disabled={isVerifying}>
+                      <FormControl>
+                      <SelectTrigger>
+                          <SelectValue placeholder="Estatus en el SAT" />
+                      </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                          <SelectItem value="Vigente">Vigente</SelectItem>
+                          <SelectItem value="Cancelada">Cancelada</SelectItem>
+                      </SelectContent>
+                  </Select>
+                  {isVerifying && <Loader className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </div>
                 <FormMessage />
                 </FormItem>
             )}
@@ -264,7 +288,9 @@ export const AddInvoiceForm = ({ clients, onSave, onCancel }: AddInvoiceFormProp
         
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-          <Button type="submit">Guardar Factura</Button>
+          <Button type="submit" disabled={isVerifying}>
+            {isVerifying ? "Verificando..." : "Guardar Factura"}
+          </Button>
         </div>
       </form>
     </Form>
