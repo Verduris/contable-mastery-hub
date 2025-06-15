@@ -35,7 +35,7 @@ export function Sidebar() {
     <aside className="hidden md:flex md:flex-col md:w-64 bg-card border-r">
       <div className="h-16 flex items-center px-6 border-b">
         <Book className="h-8 w-8 text-primary" />
-        <span className="ml-3 text-lg font-semibold">Contabilidad Pro</span>
+        <span className="ml-3 text-lg font-semibold">ContFrutis</span>
       </div>
       <nav className="flex-1 px-4 py-4 space-y-1">
         {navigation.map((item) => (
