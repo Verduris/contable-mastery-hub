@@ -42,7 +42,7 @@ export async function fetchJournalEntries(clientId?: string): Promise<JournalEnt
     date: entry.date,
     concept: entry.concept,
     type: entry.type,
-    status: entry.status,
+    status: entry.status as JournalEntryStatus,
     reference: entry.reference || undefined,
     clientId: entry.client_id || undefined,
     invoiceId: entry.invoice_id || undefined,
@@ -63,7 +63,7 @@ export async function upsertJournalEntry(entryData: JournalEntryFormData, entryI
         entry_date: entryData.date.toISOString(),
         entry_concept: entryData.concept,
         entry_type: entryData.type,
-        entry_status: entryData.status,
+        entry_status: entryData.status as any,
         entry_reference: entryData.reference || null,
         entry_client_id: entryData.clientId || null,
         lines: entryData.lines.map(line => ({
@@ -87,7 +87,7 @@ export async function upsertJournalEntry(entryData: JournalEntryFormData, entryI
 export async function updateJournalEntryStatus(entryId: string, status: JournalEntryStatus): Promise<any> {
     const { data, error } = await supabase
         .from('journal_entries')
-        .update({ status })
+        .update({ status: status as any })
         .eq('id', entryId)
         .select();
     
