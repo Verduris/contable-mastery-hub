@@ -1,3 +1,4 @@
+
 import { Account } from './account';
 
 export type JournalEntryLine = {
@@ -33,6 +34,7 @@ export type JournalEntryFormData = {
     reference?: string;
     clientId?: string;
     lines: {
+        id?: string;
         accountId: string;
         description: string;
         debit: number;

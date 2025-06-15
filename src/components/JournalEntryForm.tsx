@@ -28,7 +28,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Account } from "@/types/account";
 import { Client } from "@/types/client";
-import { JournalEntryFormData, JournalEntryStatus } from "@/types/journal";
+import { JournalEntry, JournalEntryFormData, JournalEntryStatus } from "@/types/journal";
 import { useMemo, useEffect } from "react";
 import { JournalEntryLinesTable } from "./journal-entry-form/JournalEntryLinesTable";
 
@@ -41,6 +41,7 @@ const formSchema = z.object({
     reference: z.string().optional(),
     clientId: z.string().optional(),
     lines: z.array(z.object({
+        id: z.string().optional(),
         accountId: z.string().min(1, "Debes seleccionar una cuenta."),
         description: z.string().min(1, "La descripción es requerida."),
         debit: z.coerce.number().min(0),
@@ -56,26 +57,37 @@ type JournalEntryFormProps = {
   clients: Client[];
   onSave: (data: JournalEntryFormData) => void;
   onCancel: () => void;
+  initialData?: JournalEntry | null;
   nextEntryNumber: string;
 };
 
-export const JournalEntryForm = ({ accounts, clients, onSave, onCancel, nextEntryNumber }: JournalEntryFormProps) => {
+export const JournalEntryForm = ({ accounts, clients, onSave, onCancel, initialData, nextEntryNumber }: JournalEntryFormProps) => {
   const form = useForm<JournalEntryFormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      number: nextEntryNumber,
-      date: new Date(),
-      type: "Diario",
-      status: "Borrador" as JournalEntryStatus,
-      concept: "",
-      reference: "",
-      clientId: "",
-      lines: [
-        { accountId: "", description: "", debit: 0, credit: 0 },
-        { accountId: "", description: "", debit: 0, credit: 0 },
-      ],
-    },
   });
+
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        ...initialData,
+        date: new Date(initialData.date),
+      });
+    } else {
+      form.reset({
+        number: nextEntryNumber,
+        date: new Date(),
+        type: "Diario",
+        status: "Borrador" as JournalEntryStatus,
+        concept: "",
+        reference: "",
+        clientId: "",
+        lines: [
+          { accountId: "", description: "", debit: 0, credit: 0 },
+          { accountId: "", description: "", debit: 0, credit: 0 },
+        ],
+      });
+    }
+  }, [initialData, nextEntryNumber, form]);
 
   const watchedLines = form.watch("lines");
   const watchedType = form.watch("type");

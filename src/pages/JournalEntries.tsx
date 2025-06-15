@@ -57,29 +57,61 @@ const JournalEntries = () => {
   const [invoices] = useState<Invoice[]>(initialInvoices);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(initialJournalEntries);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const { toast } = useToast();
 
+  const handleEdit = (entry: JournalEntry) => {
+    setEditingEntry(entry);
+    setIsDialogOpen(true);
+  };
+
   const handleSaveEntry = (data: JournalEntryFormData) => {
-    const newEntry: JournalEntry = {
-      id: (journalEntries.length + 1).toString(),
-      number: data.number,
-      date: data.date.toISOString(),
-      concept: data.concept,
-      type: data.type,
-      status: data.status,
-      reference: data.reference,
-      clientId: data.clientId,
-      lines: data.lines.map((line, index) => ({
+    if (editingEntry) {
+      const updatedEntry: JournalEntry = {
+        ...editingEntry,
+        ...data,
+        date: data.date.toISOString(),
+        lines: data.lines.map((line, index) => ({
           ...line,
-          id: `${journalEntries.length + 1}-${index}`
-      }))
-    };
-    setJournalEntries([...journalEntries, newEntry]);
-    setIsDialogOpen(false);
-    toast({
+          credit: line.credit || 0,
+          debit: line.debit || 0,
+          id: line.id || `${editingEntry.id}-${Date.now()}-${index}`,
+        })),
+      };
+      setJournalEntries(
+        journalEntries.map((e) => (e.id === editingEntry.id ? updatedEntry : e))
+      );
+      toast({
+        title: "¡Póliza actualizada!",
+        description: `La póliza "${updatedEntry.number}" ha sido guardada.`,
+      });
+    } else {
+      const newEntry: JournalEntry = {
+        id: (journalEntries.length + 1).toString(),
+        number: data.number,
+        date: data.date.toISOString(),
+        concept: data.concept,
+        type: data.type,
+        status: data.status,
+        reference: data.reference,
+        clientId: data.clientId,
+        invoiceId: data.type === 'Ingreso' || data.type === 'Egreso' ? undefined : undefined,
+        lines: data.lines.map((line, index) => ({
+          ...line,
+          credit: line.credit || 0,
+          debit: line.debit || 0,
+          id: `${journalEntries.length + 1}-${index}`,
+        })),
+      };
+      setJournalEntries([...journalEntries, newEntry]);
+      toast({
         title: "¡Póliza guardada!",
         description: `La póliza "${newEntry.number}: ${newEntry.concept}" ha sido creada.`,
-    })
+      });
+    }
+
+    setIsDialogOpen(false);
+    setEditingEntry(null);
   };
 
   const handleVoidEntry = (entryId: string) => {
@@ -190,7 +222,7 @@ const JournalEntries = () => {
             <CardTitle>Pólizas Contables</CardTitle>
             <CardDescription>Registra y administra las operaciones de tu negocio.</CardDescription>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingEntry(null); }}>
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -199,13 +231,14 @@ const JournalEntries = () => {
             </DialogTrigger>
             <DialogContent className="max-w-4xl">
               <DialogHeader>
-                <DialogTitle>Crear Nueva Póliza Contable</DialogTitle>
+                <DialogTitle>{editingEntry ? 'Editar' : 'Crear Nueva'} Póliza Contable</DialogTitle>
               </DialogHeader>
               <JournalEntryForm 
                 accounts={accounts}
                 clients={clients}
                 onSave={handleSaveEntry} 
-                onCancel={() => setIsDialogOpen(false)}
+                onCancel={() => { setIsDialogOpen(false); setEditingEntry(null); }}
+                initialData={editingEntry}
                 nextEntryNumber={getNextEntryNumber()}
               />
             </DialogContent>
@@ -264,7 +297,7 @@ const JournalEntries = () => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                       <DropdownMenuItem disabled>
+                       <DropdownMenuItem onClick={() => handleEdit(entry)}>
                         <Edit className="mr-2 h-4 w-4" />
                         <span>Ver/Editar</span>
                       </DropdownMenuItem>
