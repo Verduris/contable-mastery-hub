@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -70,7 +71,7 @@ const JournalEntries = () => {
 
   const { data: journalEntries = [], isLoading: isLoadingEntries, isError, error } = useQuery({
     queryKey: ["journalEntries"],
-    queryFn: fetchJournalEntries,
+    queryFn: () => fetchJournalEntries(),
   });
 
   const [clients] = useState<Client[]>(initialClients);
