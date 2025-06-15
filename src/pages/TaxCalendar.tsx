@@ -4,12 +4,17 @@ import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { taxEvents as initialTaxEvents, TaxEvent, TaxEventStatus } from '@/data/taxEvents';
 import { parseISO, isSameDay, isBefore, differenceInDays, startOfToday } from 'date-fns';
-import { CalendarDays, FileText, CheckCircle2, XCircle, Clock, AlertTriangle, Plus, Link as LinkIcon, Filter, Info } from 'lucide-react';
+import { CalendarDays, FileText, CheckCircle2, XCircle, Clock, AlertTriangle, Plus, Link as LinkIcon, Filter, Info, Loader2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Link } from 'react-router-dom';
 import { AddTaxEventDialog } from '@/components/AddTaxEventDialog';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
+
+type TaxEvent = Database['public']['Tables']['tax_events']['Row'];
+type TaxEventStatus = Database['public']['Enums']['tax_event_status'];
 
 const statusConfig: Record<TaxEventStatus, {
     label: string;
@@ -32,12 +37,23 @@ const dueSoonConfig = {
 };
 
 const TaxCalendar = () => {
-    const [events, setEvents] = useState<TaxEvent[]>(initialTaxEvents);
     const [date, setDate] = useState<Date | undefined>(new Date('2025-06-17'));
     const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
     const { toast } = useToast();
+    const queryClient = useQueryClient();
 
-    const taxTypes = useMemo(() => [...new Set(initialTaxEvents.map(e => e.taxType).filter(t => t !== 'Personalizado'))], []);
+    const { data: taxData, isLoading: isLoadingEvents } = useQuery({
+        queryKey: ['tax_events'],
+        queryFn: async () => {
+            const { data, error } = await supabase.from('tax_events').select('*').order('date', { ascending: false });
+            if (error) throw error;
+            const uniqueTaxTypes = [...new Set(data.map(e => e.tax_type).filter(t => t !== 'Personalizado'))];
+            return { events: data, uniqueTaxTypes };
+        }
+    });
+
+    const events = useMemo(() => taxData?.events ?? [], [taxData]);
+    const taxTypes = useMemo(() => taxData?.uniqueTaxTypes ?? [], [taxData]);
 
     const toggleFilter = (taxType: string) => {
         setActiveFilters(prev => {
@@ -53,7 +69,7 @@ const TaxCalendar = () => {
 
     const filteredEvents = useMemo(() => {
         if (activeFilters.size === 0) return events;
-        return events.filter(event => activeFilters.has(event.taxType));
+        return events.filter(event => activeFilters.has(event.tax_type));
     }, [events, activeFilters]);
 
     const getEventComputedStatus = (event: TaxEvent) => {
@@ -107,26 +123,72 @@ const TaxCalendar = () => {
     const selectedDayEvents = date
         ? filteredEvents.filter((event) => isSameDay(parseISO(event.date), date))
         : [];
+
+    const updateEventStatusMutation = useMutation({
+        mutationFn: async ({ eventId, status }: { eventId: string; status: TaxEventStatus }) => {
+            const { error } = await supabase.from('tax_events').update({ status }).eq('id', eventId);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tax_events'] });
+            toast({
+                title: "Obligación actualizada",
+                description: "La obligación se ha marcado como 'Presentado'.",
+            });
+        },
+        onError: (error: Error) => {
+             toast({
+                variant: "destructive",
+                title: "Error al actualizar",
+                description: error.message,
+            });
+        }
+    });
         
     const handleMarkAsPresented = (eventId: string) => {
-        setEvents(currentEvents => currentEvents.map(e => e.id === eventId ? { ...e, status: 'Presentado' } : e));
-        toast({
-            title: "Obligación actualizada",
-            description: "La obligación se ha marcado como 'Presentado'.",
-        });
+        updateEventStatusMutation.mutate({ eventId, status: 'Presentado' });
     };
 
-    const handleAddEvent = (newEventData: Omit<TaxEvent, 'id' | 'status' | 'regime' | 'legalBasis'>) => {
-        const newEvent: TaxEvent = {
+    const addEventMutation = useMutation({
+        mutationFn: async (newEvent: Database['public']['Tables']['tax_events']['Insert']) => {
+            const { data, error } = await supabase.from('tax_events').insert(newEvent).select().single();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tax_events'] });
+             toast({
+                title: "Evento añadido",
+                description: "El evento personalizado se ha añadido a tu agenda.",
+            });
+        },
+        onError: (error: Error) => {
+            toast({
+                variant: "destructive",
+                title: "Error al añadir evento",
+                description: error.message,
+            });
+        }
+    });
+
+    const handleAddEvent = (newEventData: { title: string, description: string, date: string, tax_type: string }) => {
+        addEventMutation.mutate({
             ...newEventData,
-            id: String(Date.now()),
             status: 'Pendiente',
             regime: 'General',
             legalBasis: 'N/A',
-        };
-        setEvents(currentEvents => [...currentEvents, newEvent]);
+        });
     };
     
+    if (isLoadingEvents) {
+        return (
+            <div className="flex justify-center items-center h-96">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-4 text-muted-foreground">Cargando agenda fiscal...</span>
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -210,7 +272,7 @@ const TaxCalendar = () => {
                                             </CardTitle>
                                             <Badge variant={status.badgeVariant} className="flex-shrink-0">{status.label}</Badge>
                                         </div>
-                                        <CardDescription>{event.taxType} - {event.regime}</CardDescription>
+                                        <CardDescription>{event.tax_type} - {event.regime}</CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <p className="text-sm text-muted-foreground mb-4">{event.description}</p>

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import {
@@ -19,12 +18,11 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { TaxEvent } from '@/data/taxEvents';
 import { useToast } from '@/hooks/use-toast';
 
 interface AddTaxEventDialogProps {
   children: React.ReactNode;
-  onEventAdd: (event: Omit<TaxEvent, 'id' | 'status' | 'regime' | 'legalBasis' >) => void;
+  onEventAdd: (event: { title: string, description: string, date: string, tax_type: string }) => void;
 }
 
 export function AddTaxEventDialog({ children, onEventAdd }: AddTaxEventDialogProps) {
@@ -40,7 +38,7 @@ export function AddTaxEventDialog({ children, onEventAdd }: AddTaxEventDialogPro
         title,
         description,
         date: format(date, 'yyyy-MM-dd'),
-        taxType: 'Personalizado',
+        tax_type: 'Personalizado',
       });
       setOpen(false);
       // Reset form
