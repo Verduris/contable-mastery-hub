@@ -1,17 +1,20 @@
-
+import { useQuery } from "@tanstack/react-query";
 import { Client } from "@/types/client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { journalEntries as allJournalEntries } from "@/data/journalEntries";
-import { initialClientAuditLogs } from "@/data/clientAuditLogs";
 import { Table, TableBody, TableCell, TableHeader, TableRow, TableHead } from "@/components/ui/table";
 import { File, Download } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Account } from "@/types/account";
+import { fetchJournalEntries } from "@/queries/journalEntries";
+import { fetchClientAuditLogs } from "@/queries/clients";
+import { JournalEntry } from "@/types/journal";
+import { AuditLogEvent } from "@/types/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ClientDetailsProps {
   client: Client;
@@ -28,13 +31,16 @@ const DetailItem = ({ label, value }: { label: string, value: React.ReactNode })
 export const ClientDetails = ({ client, accounts }: ClientDetailsProps) => {
   const associatedAccount = accounts.find(acc => acc.id === client.associatedAccountId);
 
-  const clientJournalEntries = allJournalEntries
-    .filter(entry => entry.clientId === client.id)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
+  const { data: clientJournalEntries = [], isLoading: isLoadingJournalEntries } = useQuery<JournalEntry[]>({
+    queryKey: ['journalEntries', client.id],
+    queryFn: () => fetchJournalEntries(client.id),
+    select: (data) => data.slice(0, 5)
+  });
 
-  const clientAuditLogs = initialClientAuditLogs.filter(log => log.clientId === client.id)
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const { data: clientAuditLogs = [], isLoading: isLoadingAuditLogs } = useQuery<AuditLogEvent[]>({
+      queryKey: ['clientAuditLogs', client.id],
+      queryFn: () => fetchClientAuditLogs(client.id)
+  });
 
   const handleUploadClick = () => {
     alert("La funcionalidad de carga de archivos estará disponible próximamente.");
@@ -100,7 +106,13 @@ export const ClientDetails = ({ client, accounts }: ClientDetailsProps) => {
           </div>
         </CardHeader>
         <CardContent>
-          {clientJournalEntries.length > 0 ? (
+          {isLoadingJournalEntries ? (
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+            </div>
+          ) : clientJournalEntries.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -148,7 +160,12 @@ export const ClientDetails = ({ client, accounts }: ClientDetailsProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {clientAuditLogs.length > 0 ? (
+          {isLoadingAuditLogs ? (
+             <div className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+             </div>
+          ) : clientAuditLogs.length > 0 ? (
             <ul className="space-y-4 text-sm">
               {clientAuditLogs.map(log => (
                 <li key={log.id} className="relative pl-6">

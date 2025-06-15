@@ -2,8 +2,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { JournalEntry, JournalEntryFormData, JournalEntryStatus } from "@/types/journal";
 
-export async function fetchJournalEntries(): Promise<JournalEntry[]> {
-  const { data, error } = await supabase
+export async function fetchJournalEntries(clientId?: string): Promise<JournalEntry[]> {
+  let query = supabase
     .from("journal_entries")
     .select(`
       id,
@@ -24,6 +24,12 @@ export async function fetchJournalEntries(): Promise<JournalEntry[]> {
       )
     `)
     .order("date", { ascending: false });
+
+  if (clientId) {
+    query = query.eq('client_id', clientId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching journal entries:", error);

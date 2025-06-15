@@ -62,6 +62,112 @@ export type Database = {
           },
         ]
       }
+      client_audit_logs: {
+        Row: {
+          action: string
+          client_id: string
+          created_at: string
+          details: string | null
+          id: string
+          user: string
+        }
+        Insert: {
+          action: string
+          client_id: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          user: string
+        }
+        Update: {
+          action?: string
+          client_id?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          user?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_audit_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          address: string
+          associated_account_id: string | null
+          balance: number
+          cfdi_use: string | null
+          contract_url: string | null
+          created_at: string
+          credit_days: number | null
+          credit_limit: number | null
+          email: string
+          id: string
+          internal_notes: string | null
+          name: string
+          payment_method: string | null
+          phone: string
+          rfc: string
+          status: Database["public"]["Enums"]["client_status"]
+          tax_regime: string
+          type: Database["public"]["Enums"]["person_type"]
+        }
+        Insert: {
+          address: string
+          associated_account_id?: string | null
+          balance?: number
+          cfdi_use?: string | null
+          contract_url?: string | null
+          created_at?: string
+          credit_days?: number | null
+          credit_limit?: number | null
+          email: string
+          id?: string
+          internal_notes?: string | null
+          name: string
+          payment_method?: string | null
+          phone: string
+          rfc: string
+          status?: Database["public"]["Enums"]["client_status"]
+          tax_regime: string
+          type: Database["public"]["Enums"]["person_type"]
+        }
+        Update: {
+          address?: string
+          associated_account_id?: string | null
+          balance?: number
+          cfdi_use?: string | null
+          contract_url?: string | null
+          created_at?: string
+          credit_days?: number | null
+          credit_limit?: number | null
+          email?: string
+          id?: string
+          internal_notes?: string | null
+          name?: string
+          payment_method?: string | null
+          phone?: string
+          rfc?: string
+          status?: Database["public"]["Enums"]["client_status"]
+          tax_regime?: string
+          type?: Database["public"]["Enums"]["person_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_associated_account_id_fkey"
+            columns: ["associated_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_entries: {
         Row: {
           client_id: string | null
@@ -212,8 +318,10 @@ export type Database = {
       account_nature: "Deudora" | "Acreedora"
       account_status: "Activa" | "Inactiva"
       account_type: "Activo" | "Pasivo" | "Capital" | "Ingresos" | "Egresos"
+      client_status: "Activo" | "Inactivo"
       journal_entry_status: "Borrador" | "Revisada" | "Anulada"
       journal_entry_type: "Ingreso" | "Egreso" | "Diario"
+      person_type: "Física" | "Moral"
       tax_event_status: "Pendiente" | "Presentado" | "Vencido"
     }
     CompositeTypes: {
@@ -333,8 +441,10 @@ export const Constants = {
       account_nature: ["Deudora", "Acreedora"],
       account_status: ["Activa", "Inactiva"],
       account_type: ["Activo", "Pasivo", "Capital", "Ingresos", "Egresos"],
+      client_status: ["Activo", "Inactivo"],
       journal_entry_status: ["Borrador", "Revisada", "Anulada"],
       journal_entry_type: ["Ingreso", "Egreso", "Diario"],
+      person_type: ["Física", "Moral"],
       tax_event_status: ["Pendiente", "Presentado", "Vencido"],
     },
   },
