@@ -5,38 +5,50 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
-import { FeatureCard, RfcValidator, CfdiValidator, FiscalRegimenValidator } from "./taxes";
-import { FileText, Calendar, Bot, FileDown, ShieldQuestion, Database } from 'lucide-react';
+import { FeatureCard, RfcValidator, CfdiValidator, FiscalRegimenValidator, ComplianceOpinionValidator } from "./taxes";
+import { FileText, Bot, ShieldQuestion, Database, Mailbox, Calculator, ListChecks, BadgePercent } from 'lucide-react';
 
 const taxFeatures = [
     {
-        title: "Contabilidad Electrónica",
-        description: "Genera reportes contables (Catálogo, Balanza, Pólizas) en formato XML para el SAT. (Art. 28 CFF)",
+        title: "Buzón Tributario (Simulación)",
+        description: "Recibe notificaciones y comunicados fiscales simulados del SAT. (Art. 17-K CFF)",
+        icon: <Mailbox className="h-6 w-6 text-primary" />,
+        status: "coming_soon" as const,
+    },
+    {
+        title: "Calculadora de Días Hábiles Fiscales",
+        description: "Calcula plazos de vencimiento considerando días inhábiles oficiales. (Art. 12, 13 CFF)",
+        icon: <Calculator className="h-6 w-6 text-primary" />,
+        status: "coming_soon" as const,
+    },
+    {
+        title: "Administrador de Obligaciones",
+        description: "Visualiza tus obligaciones fiscales recurrentes según tu régimen fiscal.",
+        icon: <ListChecks className="h-6 w-6 text-primary" />,
+        status: "coming_soon" as const,
+    },
+    {
+        title: "Visor de Declaraciones Presentadas",
+        description: "Mantén un registro de tus declaraciones y acuses de pago presentados.",
         icon: <FileText className="h-6 w-6 text-primary" />,
         status: "coming_soon" as const,
     },
     {
-        title: "Agenda y Alertas Fiscales",
-        description: "Recibe recordatorios de plazos para declaraciones y pagos de impuestos. (Art. 31, 32 CFF)",
-        icon: <Calendar className="h-6 w-6 text-primary" />,
+        title: "Simulación de Multas y Recargos",
+        description: "Estima posibles multas y recargos por cumplimiento extemporáneo. (Art. 76, 82 CFF)",
+        icon: <BadgePercent className="h-6 w-6 text-primary" />,
         status: "coming_soon" as const,
     },
     {
-        title: "Historial de Declaraciones",
-        description: "Mantén un registro organizado de todas tus declaraciones y acuses de pago presentados.",
+        title: "Contabilidad Electrónica",
+        description: "Genera reportes contables (Catálogo, Balanza, Pólizas) en formato XML para el SAT. (Art. 28 CFF)",
         icon: <Database className="h-6 w-6 text-primary" />,
         status: "coming_soon" as const,
     },
     {
         title: "Simulador de Fiscalización",
-        description: "Detecta posibles inconsistencias entre tus CFDI emitidos/recibidos y tus declaraciones. (Art. 42 CFF)",
+        description: "Detecta posibles inconsistencias entre tus CFDI y tus declaraciones. (Art. 42 CFF)",
         icon: <Bot className="h-6 w-6 text-primary" />,
-        status: "coming_soon" as const,
-    },
-    {
-        title: "Exportación de Documentación",
-        description: "Exporta reportes y respaldos documentales en formatos PDF y XML para auditorías o trámites.",
-        icon: <FileDown className="h-6 w-6 text-primary" />,
         status: "coming_soon" as const,
     }
 ];
@@ -55,7 +67,7 @@ const Taxes = () => {
                     <AccordionTrigger className="text-lg font-semibold">
                         <div className="flex items-center gap-3">
                            <ShieldQuestion className="h-6 w-6 text-primary" />
-                           Validadores Fiscales (Art. 27-29 CFF)
+                           Validadores Fiscales
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-6 pt-4">
@@ -70,6 +82,10 @@ const Taxes = () => {
                         <div>
                             <h3 className="font-medium mb-2">Consultar Régimen Fiscal</h3>
                             <FiscalRegimenValidator />
+                        </div>
+                        <div>
+                            <h3 className="font-medium mb-2">Verificar Opinión de Cumplimiento (Art. 32-D CFF)</h3>
+                            <ComplianceOpinionValidator />
                         </div>
                     </AccordionContent>
                 </AccordionItem>

@@ -13,3 +13,9 @@ export type FiscalRegimen =
   | 'Demás Ingresos'
   | 'Régimen General de Ley Personas Morales'
   | 'No Encontrado';
+
+export type ComplianceStatus =
+  | 'Positiva'
+  | 'Negativa'
+  | 'En Proceso de Aclaración'
+  | 'No Encontrada';
