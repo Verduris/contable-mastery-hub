@@ -1,4 +1,4 @@
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -20,15 +20,14 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Calendar as CalendarIcon, PlusCircle, Trash2, ChevronsUpDown, Check } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Account } from "@/types/account";
 import { JournalEntryFormData } from "@/types/journal";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useMemo, useState } from "react";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { useMemo } from "react";
+import { JournalEntryLinesTable } from "./journal-entry-form/JournalEntryLinesTable";
 
 const formSchema = z.object({
     number: z.string().min(1, "El número de póliza es requerido."),
@@ -77,13 +76,6 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
     },
   });
 
-  const { fields, append, remove, update } = useFieldArray({
-    control: form.control,
-    name: "lines",
-  });
-  
-  const [openAccountComboboxIndex, setOpenAccountComboboxIndex] = useState<number | null>(null);
-
   const watchedLines = form.watch("lines");
   const totals = useMemo(() => {
     return watchedLines.reduce((acc, line) => {
@@ -96,17 +88,6 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
   function onSubmit(values: JournalEntryFormData) {
     onSave(values);
   }
-
-  const handleAmountChange = (index: number, field: 'debit' | 'credit', value: number) => {
-    const otherField = field === 'debit' ? 'credit' : 'debit';
-    const currentLine = form.getValues(`lines.${index}`);
-    if (value > 0) {
-      update(index, { ...currentLine, [field]: value, [otherField]: 0 });
-    } else {
-      update(index, { ...currentLine, [field]: value });
-    }
-  };
-
 
   return (
     <Form {...form}>
@@ -169,120 +150,9 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
             </FormItem>
         )} />
 
-        <div>
-            <h3 className="text-lg font-medium mb-2">Movimientos Contables</h3>
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-2/5">Cuenta</TableHead>
-                            <TableHead className="w-2/5">Descripción</TableHead>
-                            <TableHead className="w-1/5 text-right">Debe</TableHead>
-                            <TableHead className="w-1/5 text-right">Haber</TableHead>
-                            <TableHead className="w-auto"></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                       {fields.map((field, index) => (
-                         <TableRow key={field.id}>
-                            <TableCell>
-                                <FormField
-                                  control={form.control}
-                                  name={`lines.${index}.accountId`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <Popover
-                                        open={openAccountComboboxIndex === index}
-                                        onOpenChange={(isOpen) =>
-                                          setOpenAccountComboboxIndex(isOpen ? index : null)
-                                        }
-                                      >
-                                        <PopoverTrigger asChild>
-                                          <FormControl>
-                                            <Button
-                                              variant="outline"
-                                              role="combobox"
-                                              className={cn(
-                                                "w-full justify-between text-left",
-                                                !field.value && "text-muted-foreground"
-                                              )}
-                                            >
-                                              {field.value
-                                                ? accounts.find(
-                                                    (account) => account.id === field.value
-                                                  )?.name
-                                                : "Seleccione una cuenta"}
-                                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                            </Button>
-                                          </FormControl>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-[350px] p-0" align="start">
-                                          <Command>
-                                            <CommandInput placeholder="Buscar por código o nombre..." />
-                                            <CommandEmpty>No se encontró ninguna cuenta.</CommandEmpty>
-                                            <CommandList>
-                                              <CommandGroup>
-                                                {accounts.map((account) => (
-                                                  <CommandItem
-                                                    value={`${account.code} ${account.name}`}
-                                                    key={account.id}
-                                                    onSelect={() => {
-                                                      field.onChange(account.id);
-                                                      setOpenAccountComboboxIndex(null);
-                                                    }}
-                                                  >
-                                                    <Check
-                                                      className={cn(
-                                                        "mr-2 h-4 w-4",
-                                                        field.value === account.id
-                                                          ? "opacity-100"
-                                                          : "opacity-0"
-                                                      )}
-                                                    />
-                                                    {account.code} - {account.name}
-                                                  </CommandItem>
-                                                ))}
-                                              </CommandGroup>
-                                            </CommandList>
-                                          </Command>
-                                        </PopoverContent>
-                                      </Popover>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                            </TableCell>
-                            <TableCell>
-                                <FormField control={form.control} name={`lines.${index}.description`} render={({ field }) => (
-                                    <FormItem><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem>
-                                )}/>
-                            </TableCell>
-                            <TableCell>
-                                <FormField control={form.control} name={`lines.${index}.debit`} render={({ field }) => (
-                                     <FormItem><FormControl><Input type="number" {...field} className="text-right" onChange={e => handleAmountChange(index, 'debit', +e.target.value)} /></FormControl><FormMessage/></FormItem>
-                                )}/>
-                            </TableCell>
-                            <TableCell>
-                                <FormField control={form.control} name={`lines.${index}.credit`} render={({ field }) => (
-                                     <FormItem><FormControl><Input type="number" {...field} className="text-right" onChange={e => handleAmountChange(index, 'credit', +e.target.value)}/></FormControl><FormMessage/></FormItem>
-                                )}/>
-                            </TableCell>
-                             <TableCell>
-                                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 2}>
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                             </TableCell>
-                         </TableRow>
-                       ))}
-                    </TableBody>
-                </Table>
-            </div>
-             <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ accountId: "", description: "", debit: 0, credit: 0 })}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Agregar Movimiento
-            </Button>
-            {form.formState.errors.lines && <p className="text-sm font-medium text-destructive mt-2">{form.formState.errors.lines.message || form.formState.errors.lines.root?.message}</p>}
-        </div>
+        <JournalEntryLinesTable accounts={accounts} />
+        
+        {form.formState.errors.lines && <p className="text-sm font-medium text-destructive mt-2">{form.formState.errors.lines.message || form.formState.errors.lines.root?.message}</p>}
         
         <div className="flex justify-end items-center gap-4 pt-4 border-t">
             <div className={cn("text-lg font-semibold", totals.debit !== totals.credit && "text-destructive")}>
