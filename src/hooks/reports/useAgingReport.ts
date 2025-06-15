@@ -5,7 +5,7 @@ import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { fetchReceivables } from '@/queries/receivables';
 import { fetchPayables } from '@/queries/payables';
-import { fetchClients } from '@/queries/invoices';
+import { fetchClients } from '@/queries/clients';
 import { AccountReceivableStatus } from '@/types/receivable';
 import { AccountPayableStatus } from '@/types/payable';
 import { Client } from '@/types/client';

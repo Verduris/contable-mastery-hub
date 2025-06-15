@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { isWithinInterval } from 'date-fns';
@@ -24,7 +23,7 @@ interface UseExpensesBySupplierParams {
 
 export const useExpensesBySupplier = ({ date, selectedSupplier, selectedStatus }: UseExpensesBySupplierParams) => {
     const { data: initialPayables = [] } = useQuery({ queryKey: ['payables'], queryFn: fetchPayables });
-    const { data: journalEntries = [] } = useQuery({ queryKey: ['journalEntries'], queryFn: fetchJournalEntries });
+    const { data: journalEntries = [] } = useQuery({ queryKey: ['journalEntries'], queryFn: () => fetchJournalEntries() });
     const { data: suppliers = [] } = useQuery({ queryKey: ['clients'], queryFn: fetchClients });
     
     const supplierMap = useMemo(() => new Map(suppliers.map(c => [c.id, c.name])), [suppliers]);

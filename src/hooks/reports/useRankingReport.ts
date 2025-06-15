@@ -5,7 +5,7 @@ import { startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { fetchReceivables } from '@/queries/receivables';
 import { fetchPayables } from '@/queries/payables';
-import { fetchClients } from '@/queries/invoices';
+import { fetchClients } from '@/queries/clients';
 import { Client } from '@/types/client';
 
 export interface RankingData {

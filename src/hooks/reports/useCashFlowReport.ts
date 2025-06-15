@@ -4,7 +4,7 @@ import type { DateRange } from 'react-day-picker';
 import { useQuery } from '@tanstack/react-query';
 import { fetchReceivables } from '@/queries/receivables';
 import { fetchPayables } from '@/queries/payables';
-import { fetchClients } from '@/queries/invoices';
+import { fetchClients } from '@/queries/clients';
 import {
     eachDayOfInterval,
     isWithinInterval,

@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { Client } from '@/types/client';
 import { JournalEntry, JournalEntryStatus } from '@/types/journal';
@@ -30,7 +29,7 @@ declare module "jspdf" {
 const IncomeByClientReport = () => {
   const { toast } = useToast();
   const { data: clients = [], isLoading: isLoadingClients } = useQuery({ queryKey: ['clients'], queryFn: fetchClients });
-  const { data: journalEntries = [], isLoading: isLoadingJournalEntries } = useQuery({ queryKey: ['journalEntries'], queryFn: fetchJournalEntries });
+  const { data: journalEntries = [], isLoading: isLoadingJournalEntries } = useQuery({ queryKey: ['journalEntries'], queryFn: () => fetchJournalEntries() });
 
   const defaultDateRange: DateRange = { from: subDays(new Date(), 30), to: new Date() };
   const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDateRange);
