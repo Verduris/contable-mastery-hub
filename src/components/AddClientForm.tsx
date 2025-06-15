@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -20,7 +21,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Client, AddClientFormData } from "@/types/client";
-import { accounts } from "@/data/accounts";
+import { useQuery } from "@tanstack/react-query";
+import { fetchAccounts } from "@/queries/accounts";
 
 interface AddClientFormProps {
   clients: Client[];
@@ -31,6 +33,11 @@ interface AddClientFormProps {
 const rfcRegex = new RegExp(/^([A-ZÑ&]{3,4}) ?(?:- ?)?(\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])) ?(?:- ?)?([A-Z\d]{2})([A\d])$/);
 
 export const AddClientForm = ({ clients, onSave, onCancel }: AddClientFormProps) => {
+
+  const { data: accounts = [], isLoading: isLoadingAccounts } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: fetchAccounts,
+  });
 
   const clientSchema = z.object({
     name: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
@@ -232,7 +239,7 @@ export const AddClientForm = ({ clients, onSave, onCancel }: AddClientFormProps)
           render={({ field }) => (
             <FormItem className="md:col-span-2">
               <FormLabel>Cuenta Contable Asociada</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+              <Select onValueChange={field.onChange} defaultValue={field.value || undefined} disabled={isLoadingAccounts}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccione una cuenta contable" />

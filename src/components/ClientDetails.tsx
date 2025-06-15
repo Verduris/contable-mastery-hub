@@ -1,7 +1,6 @@
 
 import { Client } from "@/types/client";
 import { Badge } from "@/components/ui/badge";
-import { accounts } from "@/data/accounts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -12,9 +11,11 @@ import { Table, TableBody, TableCell, TableHeader, TableRow, TableHead } from "@
 import { File, Download } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { Account } from "@/types/account";
 
 interface ClientDetailsProps {
   client: Client;
+  accounts: Account[];
 }
 
 const DetailItem = ({ label, value }: { label: string, value: React.ReactNode }) => (
@@ -24,7 +25,7 @@ const DetailItem = ({ label, value }: { label: string, value: React.ReactNode })
   </div>
 );
 
-export const ClientDetails = ({ client }: ClientDetailsProps) => {
+export const ClientDetails = ({ client, accounts }: ClientDetailsProps) => {
   const associatedAccount = accounts.find(acc => acc.id === client.associatedAccountId);
 
   const clientJournalEntries = allJournalEntries

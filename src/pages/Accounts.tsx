@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Table,
@@ -27,6 +26,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { fetchAccounts } from "@/queries/accounts";
 
 async function fetchAccounts(): Promise<Account[]> {
   const { data, error } = await supabase
@@ -53,7 +53,6 @@ async function fetchAccounts(): Promise<Account[]> {
       description: a.description
   })) as Account[];
 }
-
 
 const Accounts = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);

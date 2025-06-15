@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -33,7 +32,8 @@ import { Account } from "@/types/account";
 import { Client } from "@/types/client";
 import { JournalEntry, JournalEntryFormData } from "@/types/journal";
 import { useToast } from "@/hooks/use-toast";
-import { accounts as initialAccounts } from "@/data/accounts";
+import { useQuery } from "@tanstack/react-query";
+import { fetchAccounts } from "@/queries/accounts";
 import { journalEntries as initialJournalEntries } from "@/data/journalEntries"; // Using mock data for now
 import { initialClients } from "@/data/clients";
 import { format } from "date-fns";
@@ -43,6 +43,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { initialInvoices } from "@/data/invoices";
 import { Invoice } from "@/types/invoice";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Extender la interfaz de jsPDF para incluir autoTable
 declare module "jspdf" {
@@ -52,7 +53,10 @@ declare module "jspdf" {
 }
 
 const JournalEntries = () => {
-  const [accounts] = useState<Account[]>(initialAccounts);
+  const { data: accounts = [], isLoading: isLoadingAccounts } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: fetchAccounts,
+  });
   const [clients] = useState<Client[]>(initialClients);
   const [invoices] = useState<Invoice[]>(initialInvoices);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(initialJournalEntries);
@@ -260,7 +264,20 @@ const JournalEntries = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {journalEntries.map((entry) => {
+            {isLoadingAccounts ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-5 w-28 ml-auto" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-8 ml-auto" /></TableCell>
+                </TableRow>
+              ))
+            ) : journalEntries.map((entry) => {
               const linkedInvoice = entry.invoiceId ? invoices.find(inv => inv.id === entry.invoiceId) : null;
               return (
               <TableRow key={entry.id} className={cn(entry.status === 'Anulada' && 'text-muted-foreground')}>

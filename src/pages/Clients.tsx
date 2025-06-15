@@ -1,5 +1,6 @@
 
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -18,6 +19,8 @@ import { journalEntries as initialJournalEntries } from "@/data/journalEntries";
 import { ClientsHeader } from "@/components/clients/ClientsHeader";
 import { ClientFilters } from "@/components/clients/ClientFilters";
 import { ClientsTable } from "@/components/clients/ClientsTable";
+import { fetchAccounts } from "@/queries/accounts";
+import { Account } from "@/types/account";
 
 const Clients = () => {
   const [clients, setClients] = useState<Client[]>(initialClients);
@@ -28,6 +31,11 @@ const Clients = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<ClientStatus | "Todos">("Todos");
   const { toast } = useToast();
+
+  const { data: accounts = [] } = useQuery<Account[]>({
+    queryKey: ["accounts"],
+    queryFn: fetchAccounts,
+  });
 
   const handleSaveClient = (newClientData: AddClientFormData) => {
     const newClient: Client = {
@@ -83,7 +91,7 @@ const Clients = () => {
 
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
-            {selectedClient && <ClientDetails client={selectedClient} />}
+            {selectedClient && <ClientDetails client={selectedClient} accounts={accounts} />}
         </DialogContent>
       </Dialog>
     </Card>
