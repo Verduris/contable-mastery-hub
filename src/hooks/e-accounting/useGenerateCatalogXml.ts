@@ -36,12 +36,12 @@ export const useGenerateCatalogXml = () => {
                 '@_Mes': month,
                 '@_Anio': year,
                 'catalogocuentas:Ctas': accounts
-                    .filter(account => account.code && account.name && account.level && account.nature && account.sat_code)
+                    .filter(account => account.code && account.name && account.level && account.nature && account.satCode)
                     .map(account => ({
-                    '@_CodAgrup': account.sat_code,
+                    '@_CodAgrup': account.satCode,
                     '@_NumCta': account.code,
                     '@_Desc': account.name,
-                    '@_SubCtaDe': accounts.find(a => a.id === account.parent_id)?.code || '',
+                    '@_SubCtaDe': accounts.find(a => a.id === account.parentId)?.code || '',
                     '@_Nivel': account.level,
                     '@_Natur': account.nature === 'Deudora' ? 'D' : 'A',
                 }))
