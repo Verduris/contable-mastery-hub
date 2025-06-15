@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowRight, BarChart, LineChart } from 'lucide-react';
@@ -26,6 +27,12 @@ const reports = [
         description: 'Visualiza entradas (cobranzas) y salidas (pagos) en el tiempo.',
         link: '/reportes/flujo-de-caja',
         icon: <LineChart className="w-6 h-6 text-primary" />,
+    },
+    {
+        title: 'Ranking de Clientes y Proveedores',
+        description: 'Visualiza el top 5 de clientes con más ingresos y proveedores con más egresos.',
+        link: '/reportes/ranking-clientes-proveedores',
+        icon: <BarChart className="w-6 h-6 text-primary" />,
     },
     // Futuros reportes se pueden agregar aquí
 ];
