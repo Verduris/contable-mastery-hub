@@ -76,3 +76,24 @@ export const addInvoice = async (invoiceData: AddInvoicePayload) => {
         throw new Error(error.message);
     }
 };
+
+export const uploadInvoiceFile = async (file: File, invoiceId: string): Promise<string> => {
+    const filePath = `${invoiceId}/${file.name}`;
+    const { data, error } = await supabase.storage
+        .from('invoice_files')
+        .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: true,
+        });
+
+    if (error) {
+        console.error('Error uploading invoice file:', error);
+        throw new Error('Error al subir el archivo de la factura.');
+    }
+    
+    if (!data) {
+        throw new Error('No se recibió la ruta del archivo después de subirlo.');
+    }
+    
+    return data.path;
+};

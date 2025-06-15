@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -7,7 +8,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { fetchInvoices, addInvoice } from "@/queries/invoices";
+import { fetchInvoices, addInvoice, uploadInvoiceFile } from "@/queries/invoices";
 import { fetchClients } from "@/queries/clients";
 import { initialClients } from "@/data/clients";
 import { Invoice, SatStatus } from "@/types/invoice";
@@ -16,6 +17,7 @@ import { Client } from "@/types/client";
 import { InvoicesHeader } from "@/components/invoicing/InvoicesHeader";
 import { InvoicesTable } from "@/components/invoicing/InvoicesTable";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
 
 const Invoicing = () => {
   const queryClient = useQueryClient();
@@ -47,7 +49,19 @@ const Invoicing = () => {
   );
   
   const addInvoiceMutation = useMutation({
-    mutationFn: addInvoice,
+    mutationFn: async ({ invoice, file }: { invoice: Invoice, file: File }) => {
+        const filePath = await uploadInvoiceFile(file, invoice.id);
+        
+        await addInvoice({
+            id: invoice.id,
+            clientId: invoice.clientId,
+            date: invoice.date,
+            amount: invoice.amount,
+            cfdiUse: invoice.cfdiUse,
+            satStatus: invoice.satStatus,
+            fileName: filePath,
+        });
+    },
     onSuccess: () => {
         toast({
             title: "¡Factura Registrada!",
@@ -68,16 +82,8 @@ const Invoicing = () => {
     }
   });
 
-  const handleSaveInvoice = (newInvoice: Invoice) => {
-    addInvoiceMutation.mutate({
-      id: newInvoice.id,
-      clientId: newInvoice.clientId,
-      date: newInvoice.date,
-      amount: newInvoice.amount,
-      cfdiUse: newInvoice.cfdiUse,
-      satStatus: newInvoice.satStatus,
-      fileName: newInvoice.fileName || 'unknown.xml',
-    });
+  const handleSaveInvoice = (newInvoice: Invoice, file: File) => {
+    addInvoiceMutation.mutate({ invoice: newInvoice, file });
   };
 
   const filteredInvoices = useMemo(() => {
@@ -95,12 +101,49 @@ const Invoicing = () => {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [invoices, filters]);
 
-  const handleDownloadXML = (invoice: Invoice) => {
-    toast({
-      variant: "default",
-      title: "Funcionalidad en desarrollo",
-      description: `La descarga del archivo XML "${invoice.fileName}" estará disponible pronto.`,
-    });
+  const handleDownloadXML = async (invoice: Invoice) => {
+    if (!invoice.fileName) {
+      toast({
+        variant: "destructive",
+        title: "Archivo no encontrado",
+        description: "Esta factura no tiene un archivo XML asociado.",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('invoice_files')
+        .download(invoice.fileName);
+
+      if (error) {
+        throw error;
+      }
+
+      const blob = new Blob([data], { type: 'application/xml' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const originalFileName = invoice.fileName.split('/').pop();
+      a.download = originalFileName || 'factura.xml';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      
+      toast({
+          title: "XML Descargado",
+          description: "El archivo XML de la factura ha sido descargado.",
+      });
+
+    } catch (error: any) {
+      console.error("Error downloading XML:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al descargar",
+        description: error.message || "No se pudo descargar el archivo XML.",
+      });
+    }
   };
 
   const handleDownloadPDF = (invoice: Invoice) => {

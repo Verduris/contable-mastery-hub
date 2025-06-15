@@ -34,7 +34,7 @@ interface InvoicesHeaderProps {
   ) => void;
   isDialogOpen: boolean;
   onDialogOpenChange: (open: boolean) => void;
-  onSaveInvoice: (invoice: Invoice) => void;
+  onSaveInvoice: (invoice: Invoice, file: File) => void;
 }
 
 export const InvoicesHeader = ({

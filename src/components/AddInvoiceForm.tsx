@@ -41,7 +41,7 @@ type InvoiceFormValues = z.infer<typeof formSchema>;
 
 interface AddInvoiceFormProps {
   clients: Client[];
-  onSave: (invoice: Invoice) => void;
+  onSave: (invoice: Invoice, file: File) => void;
   onCancel: () => void;
 }
 
@@ -151,6 +151,7 @@ export const AddInvoiceForm = ({ clients, onSave, onCancel }: AddInvoiceFormProp
   };
 
   const onSubmit = (values: InvoiceFormValues) => {
+    const file = values.xmlFile[0];
     const newInvoice: Invoice = {
       id: values.uuid,
       uuid: values.uuid,
@@ -159,9 +160,9 @@ export const AddInvoiceForm = ({ clients, onSave, onCancel }: AddInvoiceFormProp
       amount: values.amount,
       cfdiUse: values.cfdiUse,
       satStatus: values.satStatus,
-      fileName: values.xmlFile[0].name,
+      fileName: file.name,
     };
-    onSave(newInvoice);
+    onSave(newInvoice, file);
   };
 
   return (
