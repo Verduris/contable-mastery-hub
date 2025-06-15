@@ -11,7 +11,7 @@ import { Download, Youtube } from "lucide-react";
 const modules = [
   {
     title: "Módulo de Clientes",
-    videoId: "IWhEINi_omQ",
+    videoId: "_xI-nL772IU",
     summary: "Aprende a gestionar tu cartera de clientes de forma eficiente. Este video cubre el alta, baja y modificación de clientes, así como la segmentación y el seguimiento de interacciones para mejorar la relación comercial.",
     resource: {
       name: "Guía Rápida de Clientes.pdf",
@@ -20,7 +20,7 @@ const modules = [
   },
   {
     title: "Módulo de Cuentas por Cobrar",
-    videoId: "Uu4crVdF32s",
+    videoId: "5j5qVzXzZzQ",
     summary: "Descubre cómo administrar eficazmente las cuentas por cobrar para asegurar la liquidez de tu negocio. Se explica el registro de facturas, seguimiento de pagos y gestión de la morosidad.",
     resource: {
       name: "Checklist Cuentas por Cobrar.pdf",
@@ -29,7 +29,7 @@ const modules = [
   },
   {
     title: "Módulo de Cuentas por Pagar",
-    videoId: "8FkPZJ1h_sE",
+    videoId: "rF_yO4v-q5c",
     summary: "Mantén una buena relación con tus proveedores gestionando correctamente los pagos. El video aborda el registro de facturas de proveedores, la programación de pagos y el control de vencimientos.",
     resource: {
       name: "Plantilla de Control de Pagos.xlsx",
@@ -38,7 +38,7 @@ const modules = [
   },
   {
     title: "Módulo de Facturación",
-    videoId: "nS4e5gZFxpc",
+    videoId: "A-OW2MEr6-M",
     summary: "Domina el proceso de facturación electrónica CFDI 4.0. Este tutorial completo te guía paso a paso en la emisión, cancelación y validación de facturas, cumpliendo con todos los requisitos del SAT.",
     resource: {
       name: "Resumen Visual CFDI 4.0.pdf",
@@ -47,7 +47,7 @@ const modules = [
   },
   {
     title: "Módulo de Reportes",
-    videoId: "2Yl5UaL0hEg",
+    videoId: "v4x8Lq1J_OA",
     summary: "Los reportes contables son clave para tomar decisiones. Conoce los reportes más importantes (Balance General, Estado de Resultados) y aprende a interpretarlos para entender la salud financiera de tu empresa.",
     resource: {
       name: "Guía de Interpretación de Reportes.pdf",
@@ -56,7 +56,7 @@ const modules = [
   },
   {
     title: "Módulo de Impuestos",
-    videoId: "m9lSz90tG2U",
+    videoId: "I0XpB_xM_hU",
     summary: "Una introducción clara a los principales impuestos en México (ISR, IVA). El video explica qué son, quiénes deben pagarlos y cómo se calculan de forma básica, ideal para principiantes.",
     resource: {
       name: "Calculadora Simplificada de Impuestos.xlsx",
@@ -65,7 +65,7 @@ const modules = [
   },
   {
     title: "Módulo de Agenda Fiscal",
-    videoId: "mK9nMLyPzHw",
+    videoId: "3kXgE5C7wAs",
     summary: "Nunca más olvides una fecha de pago de impuestos. Aprende a usar el calendario fiscal para organizar tus obligaciones, programar declaraciones y evitar multas y recargos del SAT.",
     resource: {
       name: "Calendario de Obligaciones Fiscales.pdf",
