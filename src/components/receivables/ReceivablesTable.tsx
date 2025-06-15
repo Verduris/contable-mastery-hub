@@ -57,7 +57,7 @@ export const ReceivablesTable = ({
           const creditLimitExceeded = client && client.creditLimit && client.creditLimit > 0 && totalOutstanding > client.creditLimit;
 
           return (
-            <TableRow key={r.id} className={cn(r.status === 'Pagada' && 'text-muted-foreground')}>
+            <TableRow key={r.id} className={cn((r.status === 'Pagada' || r.status === 'Cancelada') && 'text-muted-foreground bg-gray-50')}>
               <TableCell className="font-medium">
                 <div className="flex items-center gap-2">
                   <span>{client?.name || 'N/A'}</span>
@@ -94,7 +94,7 @@ export const ReceivablesTable = ({
               <TableCell className="text-center">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0" disabled={r.status === 'Pagada'}>
+                    <Button variant="ghost" className="h-8 w-8 p-0" disabled={r.status === 'Pagada' || r.status === 'Cancelada'}>
                       <span className="sr-only">Abrir menú</span>
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>

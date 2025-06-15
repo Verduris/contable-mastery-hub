@@ -2,7 +2,7 @@
 import { Payment } from './payment';
 import { Client } from './client';
 
-export type AccountReceivableStatus = 'Pendiente' | 'Pagada' | 'Vencida' | 'Parcialmente Pagada';
+export type AccountReceivableStatus = 'Pendiente' | 'Pagada' | 'Vencida' | 'Parcialmente Pagada' | 'Cancelada';
 
 export type AccountReceivable = {
   id: string;
