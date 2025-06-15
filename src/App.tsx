@@ -17,6 +17,7 @@ import LearningCenter from "./pages/LearningCenter";
 import CourseDetail from "./pages/CourseDetail";
 import NotFound from "./pages/NotFound";
 import IncomeByClientReport from "./pages/reports/IncomeByClientReport";
+import ClientStatement from "./pages/ClientStatement";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/cuentas" element={<Accounts />} />
             <Route path="/polizas" element={<JournalEntries />} />
             <Route path="/clientes" element={<Clients />} />
+            <Route path="/clientes/:clientId/estado-de-cuenta" element={<ClientStatement />} />
             <Route path="/reportes" element={<Reports />} />
             <Route path="/reportes/ingresos-por-cliente" element={<IncomeByClientReport />} />
             <Route path="/facturacion" element={<Invoicing />} />

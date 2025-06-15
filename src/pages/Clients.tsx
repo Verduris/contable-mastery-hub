@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -8,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Eye } from "lucide-react";
+import { PlusCircle, Eye, FileText, CircleAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,16 +20,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddClientForm } from "@/components/AddClientForm";
 import { ClientDetails } from "@/components/ClientDetails";
 import { Client, AddClientFormData, ClientStatus } from "@/types/client";
+import { JournalEntry } from "@/types/journal";
 import { useToast } from "@/hooks/use-toast";
 import { initialClients } from "@/data/clients";
+import { journalEntries as initialJournalEntries } from "@/data/journalEntries";
+import { compareAsc, differenceInDays } from "date-fns";
 
 const Clients = () => {
   const [clients, setClients] = useState<Client[]>(initialClients);
+  const [journalEntries] = useState<JournalEntry[]>(initialJournalEntries);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -54,6 +60,26 @@ const Clients = () => {
     setSelectedClient(client);
     setIsDetailDialogOpen(true);
   };
+
+  const getClientHealthStatus = (client: Client) => {
+    const clientEntries = journalEntries
+      .filter(entry => entry.clientId === client.id)
+      .sort((a, b) => compareAsc(new Date(a.date), new Date(b.date)));
+
+    const lastPayment = clientEntries.filter(e => e.type === 'Egreso').pop();
+    const daysSinceLastPayment = lastPayment ? differenceInDays(new Date(), new Date(lastPayment.date)) : Infinity;
+
+    const isDelinquent = (client.creditDays ?? 0) > 0 && daysSinceLastPayment > (client.creditDays ?? 0) && client.balance > 0;
+    const hasExhaustedCredit = (client.creditLimit ?? 0) > 0 && client.balance >= (client.creditLimit ?? 0);
+    const hasNegativeBalance = client.balance < 0;
+
+    const alertMessages = [];
+    if (isDelinquent) alertMessages.push("Cliente en mora.");
+    if (hasExhaustedCredit) alertMessages.push("Límite de crédito agotado o excedido.");
+    if (hasNegativeBalance) alertMessages.push("Cliente con saldo a favor (negativo).");
+
+    return { hasAlert: alertMessages.length > 0, message: alertMessages.join(' ') };
+  }
 
   const filteredClients = useMemo(() => {
     return clients.filter(client => {
@@ -125,9 +151,25 @@ const Clients = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredClients.map((client) => (
+            {filteredClients.map((client) => {
+              const health = getClientHealthStatus(client);
+              return (
               <TableRow key={client.id}>
-                <TableCell className="font-medium">{client.name}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {client.name}
+                    {health.hasAlert && (
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <CircleAlert className="h-4 w-4 text-destructive" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{health.message}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>{client.rfc}</TableCell>
                 <TableCell>
                   <Badge variant={client.status === 'Activo' ? 'default' : 'destructive'}>
@@ -138,13 +180,21 @@ const Clients = () => {
                     {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(client.balance)}
                 </TableCell>
                 <TableCell className="text-center">
-                  <Button variant="ghost" size="icon" onClick={() => handleViewDetails(client)}>
-                    <Eye className="h-4 w-4" />
-                    <span className="sr-only">Ver detalles</span>
-                  </Button>
+                  <div className="flex items-center justify-center">
+                    <Button variant="ghost" size="icon" onClick={() => handleViewDetails(client)}>
+                      <Eye className="h-4 w-4" />
+                      <span className="sr-only">Ver detalles</span>
+                    </Button>
+                    <Button asChild variant="ghost" size="icon">
+                      <Link to={`/clientes/${client.id}/estado-de-cuenta`}>
+                        <FileText className="h-4 w-4" />
+                        <span className="sr-only">Ver estado de cuenta</span>
+                      </Link>
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
-            ))}
+            )})}
           </TableBody>
         </Table>
       </CardContent>
