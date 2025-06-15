@@ -1,4 +1,3 @@
-
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -295,7 +294,7 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
             <div className="w-1/5">
                 <Input readOnly value={totals.credit.toFixed(2)} className="text-right font-semibold border-none" />
             </div>
-            <div className="w-auto"></div>
+            <div className="w-auto px-4"></div>
         </div>
 
         <div className="flex justify-end gap-2">
