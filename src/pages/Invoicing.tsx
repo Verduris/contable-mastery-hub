@@ -197,7 +197,7 @@ const Invoicing = () => {
       didDrawPage: (data: any) => {
         doc.setFontSize(10);
         doc.text(
-          "Página " + doc.internal.getNumberOfPages(),
+          "Página " + (doc.internal as any).getNumberOfPages(),
           data.settings.margin.left,
           doc.internal.pageSize.height - 10
         );
