@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -103,11 +104,11 @@ const JournalEntries = () => {
     if (!lastEntry) return "P-001";
     const lastNum = parseInt(lastEntry.number.split('-')[1]);
     return `P-${(lastNum + 1).toString().padStart(3, '0')}`;
-  }
+  };
 
   const calculateTotal = (lines: JournalEntry['lines']) => {
     return lines.reduce((sum, line) => sum + line.debit, 0);
-  }
+  };
 
   const accountMap = new Map(accounts.map(acc => [acc.id, `${acc.code} - ${acc.name}`]));
   const clientMap = new Map(clients.map(client => [client.id, client.name]));
@@ -287,7 +288,7 @@ const JournalEntries = () => {
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
+            )})}
           </TableBody>
         </Table>
       </CardContent>
