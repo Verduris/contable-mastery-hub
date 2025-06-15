@@ -1,4 +1,4 @@
-
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -56,6 +56,15 @@ export const AddAccountForm = ({ accounts, onSave, onCancel }: AddAccountFormPro
     .refine((data) => (data.level > 1 ? !!data.parentId : true), {
       message: "Debe seleccionar una cuenta padre para niveles superiores a 1.",
       path: ["parentId"],
+    })
+    .refine((data) => {
+        const { type, nature } = data;
+        if ( (type === 'Activo' || type === 'Egresos') && nature !== 'Deudora' ) return false;
+        if ( (type === 'Pasivo' || type === 'Capital' || type === 'Ingresos') && nature !== 'Acreedora' ) return false;
+        return true;
+    }, {
+        message: "La naturaleza no corresponde con el tipo de cuenta.",
+        path: ["nature"]
     });
 
   const form = useForm<AddAccountFormData>({
@@ -75,7 +84,16 @@ export const AddAccountForm = ({ accounts, onSave, onCancel }: AddAccountFormPro
   });
 
   const level = form.watch("level");
+  const type = form.watch("type");
   const parentAccounts = accounts.filter(acc => acc.level === level - 1);
+
+  useEffect(() => {
+    if (type === 'Activo' || type === 'Egresos') {
+      form.setValue('nature', 'Deudora', { shouldValidate: true });
+    } else if (type === 'Pasivo' || type === 'Capital' || type === 'Ingresos') {
+      form.setValue('nature', 'Acreedora', { shouldValidate: true });
+    }
+  }, [type, form]);
 
   function onSubmit(values: AddAccountFormData) {
     onSave(values);
@@ -153,7 +171,7 @@ export const AddAccountForm = ({ accounts, onSave, onCancel }: AddAccountFormPro
                             </Tooltip>
                         </TooltipProvider>
                     </div>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Selecciona la naturaleza" />
