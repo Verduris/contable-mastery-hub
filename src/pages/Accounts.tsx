@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -8,12 +9,41 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { accounts } from "@/data/accounts";
+import { accounts as initialAccounts } from "@/data/accounts";
 import { PlusCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { AddAccountForm } from "@/components/AddAccountForm";
+import { Account } from "@/types/account";
+import { useToast } from "@/components/ui/use-toast";
 
 const Accounts = () => {
+  const [accounts, setAccounts] = useState(initialAccounts);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleSaveAccount = (newAccountData: Omit<Account, 'id' | 'status'>) => {
+    const newAccount: Account = {
+      ...newAccountData,
+      id: (accounts.length + 1).toString(), // Simple ID generation
+      status: 'Activa',
+    };
+    setAccounts([...accounts, newAccount]);
+    setIsDialogOpen(false); // Close dialog on save
+    toast({
+        title: "¡Cuenta agregada!",
+        description: `La cuenta "${newAccount.name}" ha sido creada exitosamente.`,
+    })
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -22,10 +52,26 @@ const Accounts = () => {
             <CardTitle>Catálogo de Cuentas</CardTitle>
             <CardDescription>Administra tus cuentas contables.</CardDescription>
           </div>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Agregar Cuenta
-          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Agregar Cuenta
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Agregar Nueva Cuenta</DialogTitle>
+                <DialogDescription>
+                  Completa el formulario para agregar una nueva cuenta a tu catálogo.
+                </DialogDescription>
+              </DialogHeader>
+              <AddAccountForm 
+                onSave={handleSaveAccount} 
+                onCancel={() => setIsDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </CardHeader>
       <CardContent>
