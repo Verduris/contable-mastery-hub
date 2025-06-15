@@ -13,4 +13,15 @@ export const initialInvoices: Invoice[] = [
     journalEntryId: '2',
     fileName: 'factura_juan_perez_01.xml',
   },
+  {
+    id: 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e',
+    uuid: 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e',
+    clientId: '1',
+    date: new Date('2025-05-20').toISOString(),
+    amount: 25000,
+    cfdiUse: 'G01',
+    satStatus: 'Cancelada',
+    journalEntryId: undefined,
+    fileName: 'factura_swc_01.xml',
+  },
 ];

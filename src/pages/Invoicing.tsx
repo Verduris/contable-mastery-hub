@@ -1,174 +1,239 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { PlusCircle, FileText } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { useState, useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 
 import { initialInvoices } from "@/data/invoices";
 import { initialClients } from "@/data/clients";
 import { journalEntries as initialJournalEntries } from "@/data/journalEntries";
-import { Invoice } from "@/types/invoice";
+import { initialReceivables } from "@/data/receivables";
+import { Invoice, SatStatus } from "@/types/invoice";
 import { Client } from "@/types/client";
 import { JournalEntry } from "@/types/journal";
+import { AccountReceivable } from "@/types/receivable";
 
-import { AddInvoiceForm } from "@/components/AddInvoiceForm";
+import { InvoicesHeader } from "@/components/invoicing/InvoicesHeader";
+import { InvoicesTable } from "@/components/invoicing/InvoicesTable";
 
 const Invoicing = () => {
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [clients] = useState<Client[]>(initialClients);
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(initialJournalEntries);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(
+    initialJournalEntries
+  );
+  const [receivables, setReceivables] = useState<AccountReceivable[]>(
+    initialReceivables
+  );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const clientMap = new Map(clients.map(client => [client.id, client.name]));
-  const journalEntryMap = new Map(journalEntries.map(entry => [entry.id, entry.number]));
+  const [filters, setFilters] = useState<{
+    client: string;
+    status: SatStatus | "Todos";
+    uuid: string;
+  }>({
+    client: "Todos",
+    status: "Todos",
+    uuid: "",
+  });
+
+  const clientMap = useMemo(
+    () => new Map(clients.map((client) => [client.id, client.name])),
+    [clients]
+  );
+  const journalEntryMap = useMemo(() => {
+    return new Map(journalEntries.map((entry) => [entry.id, entry.number]));
+  }, [journalEntries]);
 
   const getNextIncomeEntryNumber = () => {
-    const incomeEntries = journalEntries.filter(e => e.type === 'Ingreso');
+    const incomeEntries = journalEntries.filter((e) => e.type === "Ingreso");
     if (incomeEntries.length === 0) return "I-001";
-    const lastNum = Math.max(...incomeEntries.map(e => parseInt(e.number.split('-')[1], 10)));
-    return `I-${(lastNum + 1).toString().padStart(3, '0')}`;
+    const lastNum = Math.max(
+      ...incomeEntries.map((e) => parseInt(e.number.split("-")[1], 10))
+    );
+    return `I-${(lastNum + 1).toString().padStart(3, "0")}`;
   };
 
   const handleSaveInvoice = (newInvoiceData: Invoice) => {
-    const client = clients.find(c => c.id === newInvoiceData.clientId);
+    const client = clients.find((c) => c.id === newInvoiceData.clientId);
     if (!client) {
-        toast({ variant: "destructive", title: "Error", description: "Cliente no válido."});
-        return;
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Cliente no válido.",
+      });
+      return;
     }
 
     const newJournalEntryId = (journalEntries.length + 1).toString();
     const newJournalEntry: JournalEntry = {
-        id: newJournalEntryId,
-        number: getNextIncomeEntryNumber(),
-        date: newInvoiceData.date,
-        concept: `Factura ${newInvoiceData.uuid.substring(0, 8)} - ${client.name}`,
-        type: 'Ingreso',
-        status: 'Revisada',
-        clientId: client.id,
-        invoiceId: newInvoiceData.id,
-        lines: [
-            {
-                id: `${newJournalEntryId}-1`,
-                accountId: client.associatedAccountId || '3',
-                description: `Factura ${newInvoiceData.uuid.substring(0, 8)}`,
-                debit: newInvoiceData.amount,
-                credit: 0
-            },
-            {
-                id: `${newJournalEntryId}-2`,
-                accountId: '6', // Ingresos por Servicios
-                description: `Ingresos por factura ${newInvoiceData.uuid.substring(0, 8)}`,
-                debit: 0,
-                credit: newInvoiceData.amount
-            }
-        ]
+      id: newJournalEntryId,
+      number: getNextIncomeEntryNumber(),
+      date: newInvoiceData.date,
+      concept: `Factura ${newInvoiceData.uuid.substring(0, 8)} - ${
+        client.name
+      }`,
+      type: "Ingreso",
+      status: "Revisada",
+      clientId: client.id,
+      invoiceId: newInvoiceData.id,
+      lines: [
+        {
+          id: `${newJournalEntryId}-1`,
+          accountId: client.associatedAccountId || "3",
+          description: `Factura ${newInvoiceData.uuid.substring(0, 8)}`,
+          debit: newInvoiceData.amount,
+          credit: 0,
+        },
+        {
+          id: `${newJournalEntryId}-2`,
+          accountId: "6", // Ingresos por Servicios
+          description: `Ingresos por factura ${newInvoiceData.uuid.substring(
+            0,
+            8
+          )}`,
+          debit: 0,
+          credit: newInvoiceData.amount,
+        },
+      ],
     };
-    
-    setJournalEntries(prev => [...prev, newJournalEntry]);
-    journalEntryMap.set(newJournalEntry.id, newJournalEntry.number);
 
-    const invoiceWithJournalId = { ...newInvoiceData, journalEntryId: newJournalEntryId };
-    setInvoices(prev => [invoiceWithJournalId, ...prev]);
-    
+    setJournalEntries((prev) => [...prev, newJournalEntry]);
+
+    const invoiceWithJournalId = {
+      ...newInvoiceData,
+      journalEntryId: newJournalEntryId,
+    };
+    setInvoices((prev) => [invoiceWithJournalId, ...prev]);
+
+    // Create corresponding Account Receivable
+    const newReceivable: AccountReceivable = {
+      id: `cxc-${receivables.length + 1}`,
+      clientId: newInvoiceData.clientId,
+      invoiceId: newInvoiceData.id,
+      issueDate: newInvoiceData.date,
+      dueDate: new Date(
+        new Date(newInvoiceData.date).setDate(
+          new Date(newInvoiceData.date).getDate() + (client.creditDays || 30)
+        )
+      ).toISOString(),
+      totalAmount: newInvoiceData.amount,
+      paidAmount: 0,
+      outstandingBalance: newInvoiceData.amount,
+      status: "Pendiente",
+      paymentHistory: [],
+      notes: `Generado desde factura ${newInvoiceData.uuid.substring(0, 8)}...`,
+    };
+    setReceivables((prev) => [...prev, newReceivable]);
+
     setIsDialogOpen(false);
     toast({
-        title: "¡Factura Registrada!",
-        description: `La factura ${newInvoiceData.uuid.substring(0,8)}... ha sido registrada y se ha creado la póliza ${newJournalEntry.number}.`
+      title: "¡Factura Registrada!",
+      description: `La factura ${newInvoiceData.uuid.substring(
+        0,
+        8
+      )}... ha sido registrada, se ha creado la póliza ${
+        newJournalEntry.number
+      } y la cuenta por cobrar correspondiente.`,
     });
+  };
+
+  const filteredInvoices = useMemo(() => {
+    return invoices
+      .filter((invoice) => {
+        const clientMatch =
+          filters.client === "Todos" || invoice.clientId === filters.client;
+        const statusMatch =
+          filters.status === "Todos" || invoice.satStatus === filters.status;
+        const uuidMatch = invoice.uuid
+          .toLowerCase()
+          .includes(filters.uuid.toLowerCase().trim());
+        return clientMatch && statusMatch && uuidMatch;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [invoices, filters]);
+
+  const handleDownloadXML = (invoice: Invoice) => {
+    toast({
+      variant: "default",
+      title: "Funcionalidad en desarrollo",
+      description: `La descarga del archivo XML "${invoice.fileName}" estará disponible pronto.`,
+    });
+  };
+
+  const handleDownloadPDF = (invoice: Invoice) => {
+    const doc = new jsPDF();
+    const clientName = clientMap.get(invoice.clientId) || "N/A";
+
+    doc.setFontSize(16);
+    doc.text("Factura (CFDI)", 14, 22);
+
+    (doc as any).autoTable({
+      startY: 30,
+      head: [["Concepto", "Valor"]],
+      body: [
+        ["Cliente", clientName],
+        ["Folio Fiscal (UUID)", invoice.uuid],
+        [
+          "Fecha de Emisión",
+          format(new Date(invoice.date), "dd/MMM/yyyy", { locale: es }),
+        ],
+        [
+          "Monto Total",
+          invoice.amount.toLocaleString("es-MX", {
+            style: "currency",
+            currency: "MXN",
+          }),
+        ],
+        ["Estatus SAT", invoice.satStatus],
+        ["Uso CFDI", invoice.cfdiUse],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [41, 128, 185] },
+      didDrawPage: (data: any) => {
+        doc.setFontSize(10);
+        doc.text(
+          "Página " + doc.internal.getNumberOfPages(),
+          data.settings.margin.left,
+          doc.internal.pageSize.height - 10
+        );
+      },
+    });
+
+    doc.save(`Factura-${invoice.uuid.substring(0, 8)}.pdf`);
+
+    toast({
+      title: "PDF Generado",
+      description: `Se ha descargado el PDF para la factura.`,
+    });
+  };
+
+  const handleFiltersChange = (newFilters: Partial<typeof filters>) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
   };
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Facturación (CFDI Emitidos)</CardTitle>
-            <CardDescription>Administra las facturas emitidas a tus clientes.</CardDescription>
-          </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Registrar Factura
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
-                <DialogTitle>Registrar Nueva Factura (CFDI)</DialogTitle>
-                <DialogDescription>Sube el archivo XML para llenar los datos automáticamente.</DialogDescription>
-              </DialogHeader>
-              <AddInvoiceForm 
-                clients={clients}
-                onSave={handleSaveInvoice} 
-                onCancel={() => setIsDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
-      </CardHeader>
+      <InvoicesHeader
+        clients={clients}
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        isDialogOpen={isDialogOpen}
+        onDialogOpenChange={setIsDialogOpen}
+        onSaveInvoice={handleSaveInvoice}
+      />
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Folio Fiscal (UUID)</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Estatus SAT</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
-              <TableHead>Póliza</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {invoices.map((invoice) => (
-              <TableRow key={invoice.id}>
-                <TableCell>{format(new Date(invoice.date), 'dd/MMM/yyyy', { locale: es })}</TableCell>
-                <TableCell className="font-mono text-xs">{invoice.uuid}</TableCell>
-                <TableCell>{clientMap.get(invoice.clientId) || 'N/A'}</TableCell>
-                <TableCell>
-                  <Badge variant={invoice.satStatus === 'Cancelada' ? 'destructive' : 'default'} className={cn(invoice.satStatus === 'Vigente' && 'bg-green-600')}>
-                    {invoice.satStatus}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right font-mono">
-                  {invoice.amount.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
-                </TableCell>
-                <TableCell>
-                  {invoice.journalEntryId ? (
-                    <Button variant="link" asChild className="p-0 h-auto font-normal">
-                      <Link to="/polizas">
-                        <FileText className="mr-2 h-4 w-4"/>
-                        {journalEntryMap.get(invoice.journalEntryId)}
-                      </Link>
-                    </Button>
-                  ) : 'N/A'}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <InvoicesTable
+          invoices={filteredInvoices}
+          clientMap={clientMap}
+          journalEntryMap={journalEntryMap}
+          onDownloadXML={handleDownloadXML}
+          onDownloadPDF={handleDownloadPDF}
+        />
       </CardContent>
     </Card>
   );
