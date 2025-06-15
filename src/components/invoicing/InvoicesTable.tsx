@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import {
   Table,
@@ -95,7 +96,10 @@ export const InvoicesTable = ({
                     <Button
                       variant="link"
                       asChild
-                      className="p-0 h-auto font-normal"
+                      className={cn(
+                        "p-0 h-auto font-normal",
+                        invoice.journalEntry.status === 'Anulada' && 'line-through text-muted-foreground'
+                      )}
                     >
                       <Link to="/polizas">
                         <FileText className="mr-2 h-4 w-4" />

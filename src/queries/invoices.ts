@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Invoice, SatStatus } from '@/types/invoice';
 import { Client } from '@/types/client';
@@ -27,7 +28,8 @@ export const fetchInvoices = async (): Promise<Invoice[]> => {
             file_name,
             journal_entries:journal_entry_id (
                 id,
-                number
+                number,
+                status
             )
         `)
         .order('date', { ascending: false });
@@ -40,7 +42,7 @@ export const fetchInvoices = async (): Promise<Invoice[]> => {
     if (!data) return [];
 
     return data.map(invoice => {
-        const journalEntryData = invoice.journal_entries as { id: string; number: string; } | null;
+        const journalEntryData = invoice.journal_entries as { id: string; number: string; status: 'Borrador' | 'Revisada' | 'Publicada' | 'Anulada' } | null;
 
         return {
             id: invoice.id,
@@ -55,6 +57,7 @@ export const fetchInvoices = async (): Promise<Invoice[]> => {
             journalEntry: journalEntryData ? {
                 id: journalEntryData.id,
                 number: journalEntryData.number,
+                status: journalEntryData.status,
             } : undefined,
         };
     });

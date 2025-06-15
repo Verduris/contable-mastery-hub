@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Wallet, CircleCheck, FileText, AlertTriangle } from "lucide-react";
+import { MoreHorizontal, Wallet, CircleCheck, FileText, AlertTriangle, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -50,7 +50,9 @@ export const ReceivablesTable = ({
       </TableHeader>
       <TableBody>
         {receivables.map((r) => {
-          const statusInfo = getStatusInfo(r);
+          const statusInfo = r.status === 'Cancelada'
+            ? { icon: <XCircle className="h-4 w-4 text-muted-foreground" />, tooltip: 'Esta cuenta ha sido cancelada.', colorClass: 'text-muted-foreground' }
+            : getStatusInfo(r);
           const daysDiff = differenceInDays(parseISO(r.dueDate), new Date());
           const client = r.client;
           const totalOutstanding = clientTotalOutstanding.get(r.clientId) || 0;
@@ -90,7 +92,7 @@ export const ReceivablesTable = ({
               </TableCell>
               <TableCell className="text-right font-mono">{r.totalAmount.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</TableCell>
               <TableCell className="text-right font-mono font-semibold">{r.outstandingBalance.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</TableCell>
-              <TableCell><Badge variant={getBadgeVariant(r.status)}>{r.status}</Badge></TableCell>
+              <TableCell><Badge variant={r.status === 'Cancelada' ? 'secondary' : getBadgeVariant(r.status)}>{r.status}</Badge></TableCell>
               <TableCell className="text-center">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

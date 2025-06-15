@@ -1,5 +1,6 @@
 
 import { Client } from './client';
+import { JournalEntryStatus } from './journal';
 
 export type SatStatus = 'Vigente' | 'Cancelada';
 
@@ -16,5 +17,6 @@ export type Invoice = {
   journalEntry?: {
     id: string;
     number: string;
+    status?: JournalEntryStatus;
   };
 };
