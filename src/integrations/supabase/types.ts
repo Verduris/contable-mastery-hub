@@ -9,6 +9,59 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          balance: number
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          level: number
+          name: string
+          nature: Database["public"]["Enums"]["account_nature"]
+          parent_id: string | null
+          sat_code: string | null
+          status: Database["public"]["Enums"]["account_status"]
+          type: Database["public"]["Enums"]["account_type"]
+        }
+        Insert: {
+          balance?: number
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          level: number
+          name: string
+          nature: Database["public"]["Enums"]["account_nature"]
+          parent_id?: string | null
+          sat_code?: string | null
+          status?: Database["public"]["Enums"]["account_status"]
+          type: Database["public"]["Enums"]["account_type"]
+        }
+        Update: {
+          balance?: number
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          level?: number
+          name?: string
+          nature?: Database["public"]["Enums"]["account_nature"]
+          parent_id?: string | null
+          sat_code?: string | null
+          status?: Database["public"]["Enums"]["account_status"]
+          type?: Database["public"]["Enums"]["account_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tax_events: {
         Row: {
           created_at: string
@@ -59,6 +112,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      account_nature: "Deudora" | "Acreedora"
+      account_status: "Activa" | "Inactiva"
+      account_type: "Activo" | "Pasivo" | "Capital" | "Ingresos" | "Egresos"
       tax_event_status: "Pendiente" | "Presentado" | "Vencido"
     }
     CompositeTypes: {
@@ -175,6 +231,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_nature: ["Deudora", "Acreedora"],
+      account_status: ["Activa", "Inactiva"],
+      account_type: ["Activo", "Pasivo", "Capital", "Ingresos", "Egresos"],
       tax_event_status: ["Pendiente", "Presentado", "Vencido"],
     },
   },

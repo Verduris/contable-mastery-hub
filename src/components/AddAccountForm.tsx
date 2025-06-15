@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Loader2 } from "lucide-react";
 import { Account } from "@/types/account";
 
 const formSchemaBase = z.object({
@@ -45,14 +45,11 @@ type AddAccountFormProps = {
   accounts: Account[];
   onSave: (account: AddAccountFormData) => void;
   onCancel: () => void;
+  isSaving?: boolean;
 };
 
-export const AddAccountForm = ({ accounts, onSave, onCancel }: AddAccountFormProps) => {
+export const AddAccountForm = ({ accounts, onSave, onCancel, isSaving = false }: AddAccountFormProps) => {
   const formSchema = formSchemaBase
-    .refine((data) => !accounts.some((acc) => acc.code === data.code), {
-      message: "Este código de cuenta ya existe.",
-      path: ["code"],
-    })
     .refine((data) => (data.level > 1 ? !!data.parentId : true), {
       message: "Debe seleccionar una cuenta padre para niveles superiores a 1.",
       path: ["parentId"],
@@ -284,8 +281,11 @@ export const AddAccountForm = ({ accounts, onSave, onCancel }: AddAccountFormPro
           )}
         />
         <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
-            <Button type="submit">Guardar Cuenta</Button>
+            <Button type="button" variant="ghost" onClick={onCancel} disabled={isSaving}>Cancelar</Button>
+            <Button type="submit" disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSaving ? "Guardando..." : "Guardar Cuenta"}
+            </Button>
         </div>
       </form>
     </Form>
