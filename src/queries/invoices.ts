@@ -25,7 +25,7 @@ export const fetchInvoices = async (): Promise<Invoice[]> => {
             cfdi_use,
             sat_status,
             file_name,
-            journal_entries (
+            journal_entries:journal_entry_id (
                 id,
                 number
             )
