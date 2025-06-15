@@ -26,7 +26,7 @@ export async function fetchJournalEntries(clientId?: string): Promise<JournalEnt
     .order("date", { ascending: false });
 
   if (clientId) {
-    query =       .eq('client_id', clientId);
+    query = query.eq('client_id', clientId);
   }
 
   const { data, error } = await query;
