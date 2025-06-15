@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Account } from "@/types/account";
 
 const formSchema = z.object({
   code: z.string().min(1, "El código es requerido."),
@@ -30,11 +29,11 @@ const formSchema = z.object({
   balance: z.coerce.number(),
 });
 
-// Explicitly define a type for our form data based on the schema
-type AddAccountFormData = z.infer<typeof formSchema>;
+// Explicitly define and export a type for our form data based on the schema
+export type AddAccountFormData = z.infer<typeof formSchema>;
 
 type AddAccountFormProps = {
-  onSave: (account: Omit<Account, 'id' | 'status'>) => void;
+  onSave: (account: AddAccountFormData) => void;
   onCancel: () => void;
 };
 
@@ -97,7 +96,7 @@ export const AddAccountForm = ({ onSave, onCancel }: AddAccountFormProps) => {
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        <SelectItem value="Activo">Activo</SelectItem>
+                        <SelectItem value="Activo">Activo</sItem>
                         <SelectItem value="Pasivo">Pasivo</SelectItem>
                         <SelectItem value="Capital">Capital</SelectItem>
                         <SelectItem value="Ingresos">Ingresos</SelectItem>

@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AddAccountForm } from "@/components/AddAccountForm";
+import { AddAccountForm, type AddAccountFormData } from "@/components/AddAccountForm";
 import { Account } from "@/types/account";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -30,7 +30,7 @@ const Accounts = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleSaveAccount = (newAccountData: Omit<Account, 'id' | 'status'>) => {
+  const handleSaveAccount = (newAccountData: AddAccountFormData) => {
     const newAccount: Account = {
       ...newAccountData,
       id: (accounts.length + 1).toString(), // Simple ID generation
