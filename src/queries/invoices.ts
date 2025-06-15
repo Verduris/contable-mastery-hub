@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Invoice, SatStatus } from '@/types/invoice';
 import { Client } from '@/types/client';
 import { Tables } from '@/integrations/supabase/types';
+import { JournalEntryStatus } from '@/types/journal';
 
 export interface AddInvoicePayload {
     id: string; // UUID from XML
@@ -42,7 +43,7 @@ export const fetchInvoices = async (): Promise<Invoice[]> => {
     if (!data) return [];
 
     return data.map(invoice => {
-        const journalEntryData = invoice.journal_entries as { id: string; number: string; status: 'Borrador' | 'Revisada' | 'Publicada' | 'Anulada' } | null;
+        const journalEntryData = invoice.journal_entries as { id: string; number: string; status: JournalEntryStatus } | null;
 
         return {
             id: invoice.id,

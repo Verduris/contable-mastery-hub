@@ -10,7 +10,7 @@ export type JournalEntryLine = {
 };
 
 export type JournalEntryType = 'Ingreso' | 'Egreso' | 'Diario';
-export type JournalEntryStatus = 'Borrador' | 'Revisada' | 'Anulada';
+export type JournalEntryStatus = 'Borrador' | 'Revisada' | 'Anulada' | 'Publicada';
 
 export type JournalEntry = {
   id: string;

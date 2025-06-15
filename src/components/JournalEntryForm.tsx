@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -37,7 +36,7 @@ const formSchema = z.object({
     date: z.date({ required_error: "La fecha es requerida." }),
     concept: z.string().min(1, "El concepto es requerido."),
     type: z.enum(["Ingreso", "Egreso", "Diario"]),
-    status: z.enum(["Borrador", "Revisada", "Anulada"]),
+    status: z.enum(["Borrador", "Revisada", "Anulada", "Publicada"]),
     reference: z.string().optional(),
     clientId: z.string().optional(),
     lines: z.array(z.object({
@@ -170,6 +169,7 @@ export const JournalEntryForm = ({ accounts, clients, onSave, onCancel, initialD
                             <SelectItem value="Borrador">Borrador</SelectItem>
                             <SelectItem value="Revisada">Revisada</SelectItem>
                             <SelectItem value="Anulada">Anulada</SelectItem>
+                            <SelectItem value="Publicada">Publicada</SelectItem>
                         </SelectContent>
                     </Select>
                     <FormMessage />
