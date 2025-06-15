@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -40,6 +40,8 @@ import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { initialInvoices } from "@/data/invoices";
+import { Invoice } from "@/types/invoice";
 
 // Extender la interfaz de jsPDF para incluir autoTable
 declare module "jspdf" {
@@ -51,6 +53,7 @@ declare module "jspdf" {
 const JournalEntries = () => {
   const [accounts] = useState<Account[]>(initialAccounts);
   const [clients] = useState<Client[]>(initialClients);
+  const [invoices] = useState<Invoice[]>(initialInvoices);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(initialJournalEntries);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -223,12 +226,21 @@ const JournalEntries = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {journalEntries.map((entry) => (
+            {journalEntries.map((entry) => {
+              const linkedInvoice = entry.invoiceId ? invoices.find(inv => inv.id === entry.invoiceId) : null;
+              return (
               <TableRow key={entry.id} className={cn(entry.status === 'Anulada' && 'text-muted-foreground')}>
                 <TableCell>{format(new Date(entry.date), 'dd/MMM/yyyy', { locale: es })}</TableCell>
                 <TableCell>{entry.type}</TableCell>
                 <TableCell className="font-medium">{entry.number}</TableCell>
-                <TableCell>{entry.concept}</TableCell>
+                <TableCell>
+                  {entry.concept}
+                  {linkedInvoice && (
+                    <Button variant="link" size="sm" className="p-0 h-auto ml-2 font-normal text-xs" asChild>
+                        <Link to="/facturacion">(Factura: {linkedInvoice.uuid.substring(0,8)}...)</Link>
+                    </Button>
+                  )}
+                </TableCell>
                 <TableCell>{entry.clientId ? clientMap.get(entry.clientId) : 'N/A'}</TableCell>
                 <TableCell>
                   <Badge variant={entry.status === 'Anulada' ? 'destructive' : 'default'} className={cn(

@@ -23,6 +23,7 @@ export const journalEntries: JournalEntry[] = [
         type: 'Ingreso',
         status: 'Revisada',
         clientId: '2',
+        invoiceId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
         lines: [
             { id: '2-1', accountId: '3', description: 'Factura F-123', debit: 15000, credit: 0 },
             { id: '2-2', accountId: '6', description: 'Ingreso por consultoría', debit: 0, credit: 15000 },

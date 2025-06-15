@@ -1,4 +1,3 @@
-
 import { Account } from './account';
 
 export type JournalEntryLine = {
@@ -22,6 +21,7 @@ export type JournalEntry = {
   lines: JournalEntryLine[];
   reference?: string;
   clientId?: string;
+  invoiceId?: string;
 };
 
 export type JournalEntryFormData = {
