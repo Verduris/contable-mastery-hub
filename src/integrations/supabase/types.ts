@@ -62,6 +62,90 @@ export type Database = {
           },
         ]
       }
+      journal_entries: {
+        Row: {
+          client_id: string | null
+          concept: string
+          created_at: string
+          date: string
+          id: string
+          invoice_id: string | null
+          number: string
+          reference: string | null
+          status: Database["public"]["Enums"]["journal_entry_status"]
+          type: Database["public"]["Enums"]["journal_entry_type"]
+        }
+        Insert: {
+          client_id?: string | null
+          concept: string
+          created_at?: string
+          date: string
+          id?: string
+          invoice_id?: string | null
+          number: string
+          reference?: string | null
+          status?: Database["public"]["Enums"]["journal_entry_status"]
+          type: Database["public"]["Enums"]["journal_entry_type"]
+        }
+        Update: {
+          client_id?: string | null
+          concept?: string
+          created_at?: string
+          date?: string
+          id?: string
+          invoice_id?: string | null
+          number?: string
+          reference?: string | null
+          status?: Database["public"]["Enums"]["journal_entry_status"]
+          type?: Database["public"]["Enums"]["journal_entry_type"]
+        }
+        Relationships: []
+      }
+      journal_entry_lines: {
+        Row: {
+          account_id: string
+          created_at: string
+          credit: number
+          debit: number
+          description: string
+          id: string
+          journal_entry_id: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          credit?: number
+          debit?: number
+          description: string
+          id?: string
+          journal_entry_id: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          credit?: number
+          debit?: number
+          description?: string
+          id?: string
+          journal_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entry_lines_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entry_lines_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tax_events: {
         Row: {
           created_at: string
@@ -109,12 +193,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      upsert_journal_entry: {
+        Args: {
+          entry_id: string
+          entry_number: string
+          entry_date: string
+          entry_concept: string
+          entry_type: Database["public"]["Enums"]["journal_entry_type"]
+          entry_status: Database["public"]["Enums"]["journal_entry_status"]
+          entry_reference: string
+          entry_client_id: string
+          lines: Json
+        }
+        Returns: string
+      }
     }
     Enums: {
       account_nature: "Deudora" | "Acreedora"
       account_status: "Activa" | "Inactiva"
       account_type: "Activo" | "Pasivo" | "Capital" | "Ingresos" | "Egresos"
+      journal_entry_status: "Borrador" | "Revisada" | "Anulada"
+      journal_entry_type: "Ingreso" | "Egreso" | "Diario"
       tax_event_status: "Pendiente" | "Presentado" | "Vencido"
     }
     CompositeTypes: {
@@ -234,6 +333,8 @@ export const Constants = {
       account_nature: ["Deudora", "Acreedora"],
       account_status: ["Activa", "Inactiva"],
       account_type: ["Activo", "Pasivo", "Capital", "Ingresos", "Egresos"],
+      journal_entry_status: ["Borrador", "Revisada", "Anulada"],
+      journal_entry_type: ["Ingreso", "Egreso", "Diario"],
       tax_event_status: ["Pendiente", "Presentado", "Vencido"],
     },
   },

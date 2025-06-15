@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Table,
@@ -32,9 +32,14 @@ import { Account } from "@/types/account";
 import { Client } from "@/types/client";
 import { JournalEntry, JournalEntryFormData } from "@/types/journal";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAccounts } from "@/queries/accounts";
-import { journalEntries as initialJournalEntries } from "@/data/journalEntries"; // Using mock data for now
+import { 
+  fetchJournalEntries,
+  upsertJournalEntry,
+  updateJournalEntryStatus,
+  fetchNextEntryNumber,
+} from "@/queries/journalEntries";
 import { initialClients } from "@/data/clients";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -44,6 +49,8 @@ import "jspdf-autotable";
 import { initialInvoices } from "@/data/invoices";
 import { Invoice } from "@/types/invoice";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 // Extender la interfaz de jsPDF para incluir autoTable
 declare module "jspdf" {
@@ -53,16 +60,72 @@ declare module "jspdf" {
 }
 
 const JournalEntries = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
   const { data: accounts = [], isLoading: isLoadingAccounts } = useQuery({
     queryKey: ["accounts"],
     queryFn: fetchAccounts,
   });
+
+  const { data: journalEntries = [], isLoading: isLoadingEntries, isError, error } = useQuery({
+    queryKey: ["journalEntries"],
+    queryFn: fetchJournalEntries,
+  });
+
   const [clients] = useState<Client[]>(initialClients);
   const [invoices] = useState<Invoice[]>(initialInvoices);
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(initialJournalEntries);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
-  const { toast } = useToast();
+  const [nextEntryNumber, setNextEntryNumber] = useState("");
+
+  useEffect(() => {
+    if (isDialogOpen && !editingEntry) {
+        fetchNextEntryNumber().then(setNextEntryNumber);
+    }
+  }, [isDialogOpen, editingEntry]);
+
+  const upsertMutation = useMutation({
+    mutationFn: ({ data, id }: { data: JournalEntryFormData, id: string | null }) => upsertJournalEntry(data, id),
+    onSuccess: (_, { data }) => {
+      queryClient.invalidateQueries({ queryKey: ["journalEntries"] });
+      setIsDialogOpen(false);
+      setEditingEntry(null);
+      toast({
+        title: `¡Póliza ${editingEntry ? 'actualizada' : 'guardada'}!`,
+        description: `La póliza "${data.number}" ha sido guardada exitosamente.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al guardar la póliza",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+        setEditingEntry(null);
+    }
+  });
+
+  const voidMutation = useMutation({
+    mutationFn: (entryId: string) => updateJournalEntryStatus(entryId, 'Anulada'),
+    onSuccess: (_, entryId) => {
+        queryClient.invalidateQueries({ queryKey: ["journalEntries"] });
+        const voidedEntry = journalEntries.find(entry => entry.id === entryId);
+        toast({
+            title: "¡Póliza Anulada!",
+            description: `La póliza "${voidedEntry?.number}" ha sido marcada como anulada.`,
+        });
+    },
+    onError: (error: Error) => {
+        toast({
+            title: "Error al anular la póliza",
+            description: error.message,
+            variant: "destructive",
+        });
+    }
+  });
 
   const handleEdit = (entry: JournalEntry) => {
     setEditingEntry(entry);
@@ -70,76 +133,11 @@ const JournalEntries = () => {
   };
 
   const handleSaveEntry = (data: JournalEntryFormData) => {
-    if (editingEntry) {
-      const updatedEntry: JournalEntry = {
-        ...editingEntry,
-        ...data,
-        date: data.date.toISOString(),
-        lines: data.lines.map((line, index) => ({
-          ...line,
-          credit: line.credit || 0,
-          debit: line.debit || 0,
-          id: line.id || `${editingEntry.id}-${Date.now()}-${index}`,
-        })),
-      };
-      setJournalEntries(
-        journalEntries.map((e) => (e.id === editingEntry.id ? updatedEntry : e))
-      );
-      toast({
-        title: "¡Póliza actualizada!",
-        description: `La póliza "${updatedEntry.number}" ha sido guardada.`,
-      });
-    } else {
-      const newEntry: JournalEntry = {
-        id: (journalEntries.length + 1).toString(),
-        number: data.number,
-        date: data.date.toISOString(),
-        concept: data.concept,
-        type: data.type,
-        status: data.status,
-        reference: data.reference,
-        clientId: data.clientId,
-        invoiceId: data.type === 'Ingreso' || data.type === 'Egreso' ? undefined : undefined,
-        lines: data.lines.map((line, index) => ({
-          ...line,
-          credit: line.credit || 0,
-          debit: line.debit || 0,
-          id: `${journalEntries.length + 1}-${index}`,
-        })),
-      };
-      setJournalEntries([...journalEntries, newEntry]);
-      toast({
-        title: "¡Póliza guardada!",
-        description: `La póliza "${newEntry.number}: ${newEntry.concept}" ha sido creada.`,
-      });
-    }
-
-    setIsDialogOpen(false);
-    setEditingEntry(null);
+    upsertMutation.mutate({ data, id: editingEntry ? editingEntry.id : null });
   };
 
   const handleVoidEntry = (entryId: string) => {
-    setJournalEntries(currentEntries =>
-      currentEntries.map(entry =>
-        entry.id === entryId
-          ? { ...entry, status: 'Anulada' }
-          : entry
-      )
-    );
-    const voidedEntry = journalEntries.find(entry => entry.id === entryId);
-    if (voidedEntry) {
-      toast({
-        title: "¡Póliza Anulada!",
-        description: `La póliza "${voidedEntry.number}" ha sido marcada como anulada.`,
-      })
-    }
-  };
-
-  const getNextEntryNumber = () => {
-    const lastEntry = journalEntries.at(-1);
-    if (!lastEntry) return "P-001";
-    const lastNum = parseInt(lastEntry.number.split('-')[1]);
-    return `P-${(lastNum + 1).toString().padStart(3, '0')}`;
+    voidMutation.mutate(entryId);
   };
 
   const calculateTotal = (lines: JournalEntry['lines']) => {
@@ -218,6 +216,124 @@ const JournalEntries = () => {
     });
   };
 
+  const renderTableBody = () => {
+    if (isLoadingAccounts || isLoadingEntries) {
+      return (
+        <TableBody>
+          {Array.from({ length: 5 }).map((_, index) => (
+            <TableRow key={index}>
+              <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+              <TableCell className="text-right"><Skeleton className="h-5 w-28 ml-auto" /></TableCell>
+              <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      );
+    }
+
+    if (isError) {
+      return (
+        <TableBody>
+          <TableRow>
+            <TableCell colSpan={8} className="py-10 text-center">
+               <Alert variant="destructive" className="max-w-md mx-auto">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Error al Cargar Pólizas</AlertTitle>
+                <AlertDescription>
+                  {error instanceof Error ? error.message : "Ocurrió un error inesperado."}
+                </AlertDescription>
+              </Alert>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      );
+    }
+    
+    if (journalEntries.length === 0) {
+        return (
+            <TableBody>
+                <TableRow>
+                    <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                        No hay pólizas registradas todavía. ¡Crea la primera!
+                    </TableCell>
+                </TableRow>
+            </TableBody>
+        );
+    }
+
+    return (
+      <TableBody>
+        {journalEntries.map((entry) => {
+          const linkedInvoice = entry.invoiceId ? invoices.find(inv => inv.id === entry.invoiceId) : null;
+          return (
+          <TableRow key={entry.id} className={cn(entry.status === 'Anulada' && 'text-muted-foreground')}>
+            <TableCell>{format(new Date(entry.date), 'dd/MMM/yyyy', { locale: es })}</TableCell>
+            <TableCell>{entry.type}</TableCell>
+            <TableCell className="font-medium">{entry.number}</TableCell>
+            <TableCell>
+              {entry.concept}
+              {linkedInvoice && (
+                <Button variant="link" size="sm" className="p-0 h-auto ml-2 font-normal text-xs" asChild>
+                    <Link to="/facturacion">(Factura: {linkedInvoice.uuid.substring(0,8)}...)</Link>
+                </Button>
+              )}
+            </TableCell>
+            <TableCell>{entry.clientId ? clientMap.get(entry.clientId) : 'N/A'}</TableCell>
+            <TableCell>
+              <Badge variant={entry.status === 'Anulada' ? 'destructive' : 'default'} className={cn(
+                entry.status === 'Revisada' && 'bg-green-600 hover:bg-green-700 text-white border-transparent',
+                entry.status === 'Borrador' && 'bg-yellow-500 hover:bg-yellow-600 text-white border-transparent'
+              )}>
+                {entry.status}
+              </Badge>
+            </TableCell>
+            <TableCell className="text-right">
+              {calculateTotal(entry.lines).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+            </TableCell>
+            <TableCell className="text-right">
+               <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0" disabled={entry.status === 'Anulada'}>
+                    <span className="sr-only">Abrir menú</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                   <DropdownMenuItem onClick={() => handleEdit(entry)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    <span>Ver/Editar</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    <Copy className="mr-2 h-4 w-4" />
+                    <span>Duplicar</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportPDF(entry)} disabled={entry.status !== 'Revisada'}>
+                    <Download className="mr-2 h-4 w-4" />
+                    <span>Exportar PDF</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => handleVoidEntry(entry.id)}
+                    className="text-red-600 focus:text-red-600"
+                  >
+                    <XCircle className="mr-2 h-4 w-4" />
+                    <span>Anular</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>
+          </TableRow>
+        )})}
+      </TableBody>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -243,7 +359,7 @@ const JournalEntries = () => {
                 onSave={handleSaveEntry} 
                 onCancel={() => { setIsDialogOpen(false); setEditingEntry(null); }}
                 initialData={editingEntry}
-                nextEntryNumber={getNextEntryNumber()}
+                nextEntryNumber={nextEntryNumber}
               />
             </DialogContent>
           </Dialog>
@@ -263,83 +379,7 @@ const JournalEntries = () => {
               <TableHead><span className="sr-only">Acciones</span></TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {isLoadingAccounts ? (
-              Array.from({ length: 5 }).map((_, index) => (
-                <TableRow key={index}>
-                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-5 w-28 ml-auto" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-8 ml-auto" /></TableCell>
-                </TableRow>
-              ))
-            ) : journalEntries.map((entry) => {
-              const linkedInvoice = entry.invoiceId ? invoices.find(inv => inv.id === entry.invoiceId) : null;
-              return (
-              <TableRow key={entry.id} className={cn(entry.status === 'Anulada' && 'text-muted-foreground')}>
-                <TableCell>{format(new Date(entry.date), 'dd/MMM/yyyy', { locale: es })}</TableCell>
-                <TableCell>{entry.type}</TableCell>
-                <TableCell className="font-medium">{entry.number}</TableCell>
-                <TableCell>
-                  {entry.concept}
-                  {linkedInvoice && (
-                    <Button variant="link" size="sm" className="p-0 h-auto ml-2 font-normal text-xs" asChild>
-                        <Link to="/facturacion">(Factura: {linkedInvoice.uuid.substring(0,8)}...)</Link>
-                    </Button>
-                  )}
-                </TableCell>
-                <TableCell>{entry.clientId ? clientMap.get(entry.clientId) : 'N/A'}</TableCell>
-                <TableCell>
-                  <Badge variant={entry.status === 'Anulada' ? 'destructive' : 'default'} className={cn(
-                    entry.status === 'Revisada' && 'bg-green-600 hover:bg-green-700 text-white border-transparent',
-                    entry.status === 'Borrador' && 'bg-yellow-500 hover:bg-yellow-600 text-white border-transparent'
-                  )}>
-                    {entry.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  {calculateTotal(entry.lines).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
-                </TableCell>
-                <TableCell className="text-right">
-                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0" disabled={entry.status === 'Anulada'}>
-                        <span className="sr-only">Abrir menú</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                       <DropdownMenuItem onClick={() => handleEdit(entry)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        <span>Ver/Editar</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem disabled>
-                        <Copy className="mr-2 h-4 w-4" />
-                        <span>Duplicar</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleExportPDF(entry)} disabled={entry.status !== 'Revisada'}>
-                        <Download className="mr-2 h-4 w-4" />
-                        <span>Exportar PDF</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => handleVoidEntry(entry.id)}
-                        className="text-red-600 focus:text-red-600"
-                      >
-                        <XCircle className="mr-2 h-4 w-4" />
-                        <span>Anular</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            )})}
-          </TableBody>
+          {renderTableBody()}
         </Table>
       </CardContent>
     </Card>
