@@ -21,14 +21,15 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Calendar as CalendarIcon, PlusCircle, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, PlusCircle, Trash2, ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Account } from "@/types/account";
-import { JournalEntryFormData, JournalEntryType } from "@/types/journal";
+import { JournalEntryFormData } from "@/types/journal";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 const formSchema = z.object({
     number: z.string().min(1, "El número de póliza es requerido."),
@@ -82,6 +83,8 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
     name: "lines",
   });
   
+  const [openAccountComboboxIndex, setOpenAccountComboboxIndex] = useState<number | null>(null);
+
   const watchedLines = form.watch("lines");
   const totals = useMemo(() => {
     return watchedLines.reduce((acc, line) => {
@@ -184,17 +187,71 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
                        {fields.map((field, index) => (
                          <TableRow key={field.id}>
                             <TableCell>
-                                <FormField control={form.control} name={`lines.${index}.accountId`} render={({ field }) => (
+                                <FormField
+                                  control={form.control}
+                                  name={`lines.${index}.accountId`}
+                                  render={({ field }) => (
                                     <FormItem>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..."/></SelectTrigger></FormControl>
-                                            <SelectContent>
-                                                {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.code} - {acc.name}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage/>
+                                      <Popover
+                                        open={openAccountComboboxIndex === index}
+                                        onOpenChange={(isOpen) =>
+                                          setOpenAccountComboboxIndex(isOpen ? index : null)
+                                        }
+                                      >
+                                        <PopoverTrigger asChild>
+                                          <FormControl>
+                                            <Button
+                                              variant="outline"
+                                              role="combobox"
+                                              className={cn(
+                                                "w-full justify-between text-left",
+                                                !field.value && "text-muted-foreground"
+                                              )}
+                                            >
+                                              {field.value
+                                                ? accounts.find(
+                                                    (account) => account.id === field.value
+                                                  )?.name
+                                                : "Seleccione una cuenta"}
+                                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                          </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[350px] p-0" align="start">
+                                          <Command>
+                                            <CommandInput placeholder="Buscar por código o nombre..." />
+                                            <CommandEmpty>No se encontró ninguna cuenta.</CommandEmpty>
+                                            <CommandList>
+                                              <CommandGroup>
+                                                {accounts.map((account) => (
+                                                  <CommandItem
+                                                    value={`${account.code} ${account.name}`}
+                                                    key={account.id}
+                                                    onSelect={() => {
+                                                      field.onChange(account.id);
+                                                      setOpenAccountComboboxIndex(null);
+                                                    }}
+                                                  >
+                                                    <Check
+                                                      className={cn(
+                                                        "mr-2 h-4 w-4",
+                                                        field.value === account.id
+                                                          ? "opacity-100"
+                                                          : "opacity-0"
+                                                      )}
+                                                    />
+                                                    {account.code} - {account.name}
+                                                  </CommandItem>
+                                                ))}
+                                              </CommandGroup>
+                                            </CommandList>
+                                          </Command>
+                                        </PopoverContent>
+                                      </Popover>
+                                      <FormMessage />
                                     </FormItem>
-                                )}/>
+                                  )}
+                                />
                             </TableCell>
                             <TableCell>
                                 <FormField control={form.control} name={`lines.${index}.description`} render={({ field }) => (
