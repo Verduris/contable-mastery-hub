@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Table,
@@ -33,7 +34,7 @@ import { JournalEntry, JournalEntryFormData } from "@/types/journal";
 import { useToast } from "@/hooks/use-toast";
 import { accounts as initialAccounts } from "@/data/accounts";
 import { journalEntries as initialJournalEntries } from "@/data/journalEntries"; // Using mock data for now
-import { clients as initialClients } from "@/data/clients";
+import { initialClients } from "@/data/clients";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
