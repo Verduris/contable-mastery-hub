@@ -21,6 +21,7 @@ export type JournalEntry = {
   status: JournalEntryStatus;
   lines: JournalEntryLine[];
   reference?: string;
+  clientId?: string;
 };
 
 export type JournalEntryFormData = {
@@ -30,6 +31,7 @@ export type JournalEntryFormData = {
     type: JournalEntryType;
     status: JournalEntryStatus;
     reference?: string;
+    clientId?: string;
     lines: {
         accountId: string;
         description: string;

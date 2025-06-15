@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -26,8 +27,9 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Account } from "@/types/account";
+import { Client } from "@/types/client";
 import { JournalEntryFormData, JournalEntryStatus } from "@/types/journal";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { JournalEntryLinesTable } from "./journal-entry-form/JournalEntryLinesTable";
 
 const formSchema = z.object({
@@ -37,6 +39,7 @@ const formSchema = z.object({
     type: z.enum(["Ingreso", "Egreso", "Diario"]),
     status: z.enum(["Borrador", "Revisada", "Anulada"]),
     reference: z.string().optional(),
+    clientId: z.string().optional(),
     lines: z.array(z.object({
         accountId: z.string().min(1, "Debes seleccionar una cuenta."),
         description: z.string().min(1, "La descripción es requerida."),
@@ -50,12 +53,13 @@ const formSchema = z.object({
 
 type JournalEntryFormProps = {
   accounts: Account[];
+  clients: Client[];
   onSave: (data: JournalEntryFormData) => void;
   onCancel: () => void;
   nextEntryNumber: string;
 };
 
-export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }: JournalEntryFormProps) => {
+export const JournalEntryForm = ({ accounts, clients, onSave, onCancel, nextEntryNumber }: JournalEntryFormProps) => {
   const form = useForm<JournalEntryFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -65,6 +69,7 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
       status: "Borrador" as JournalEntryStatus,
       concept: "",
       reference: "",
+      clientId: "",
       lines: [
         { accountId: "", description: "", debit: 0, credit: 0 },
         { accountId: "", description: "", debit: 0, credit: 0 },
@@ -73,6 +78,14 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
   });
 
   const watchedLines = form.watch("lines");
+  const watchedType = form.watch("type");
+
+  useEffect(() => {
+    if (watchedType === 'Diario') {
+      form.setValue('clientId', undefined);
+    }
+  }, [watchedType, form]);
+
   const totals = useMemo(() => {
     return watchedLines.reduce((acc, line) => {
         acc.debit += line.debit || 0;
@@ -85,7 +98,11 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
   const hasAmounts = useMemo(() => totals.debit > 0 || totals.credit > 0, [totals]);
 
   function onSubmit(values: JournalEntryFormData) {
-    onSave(values);
+    const dataToSave = { ...values };
+    if (dataToSave.type === 'Diario') {
+        delete dataToSave.clientId;
+    }
+    onSave(dataToSave);
   }
 
   return (
@@ -155,13 +172,47 @@ export const JournalEntryForm = ({ accounts, onSave, onCancel, nextEntryNumber }
             )} />
         </div>
 
-        <FormField control={form.control} name="concept" render={({ field }) => (
-            <FormItem>
-                <FormLabel>Concepto General</FormLabel>
-                <FormControl><Input placeholder="Ej. Pago de nómina quincenal" {...field} /></FormControl>
-                <FormMessage />
-            </FormItem>
-        )} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField 
+            control={form.control} 
+            name="concept" 
+            render={({ field }) => (
+              <FormItem className={cn(!(watchedType === 'Ingreso' || watchedType === 'Egreso') && "md:col-span-2")}>
+                  <FormLabel>Concepto General</FormLabel>
+                  <FormControl><Input placeholder="Ej. Pago de nómina quincenal" {...field} /></FormControl>
+                  <FormMessage />
+              </FormItem>
+            )} 
+          />
+          
+          {(watchedType === 'Ingreso' || watchedType === 'Egreso') && (
+              <FormField
+                  control={form.control}
+                  name="clientId"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Cliente</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                              <FormControl>
+                                  <SelectTrigger>
+                                      <SelectValue placeholder="Selecciona un cliente" />
+                                  </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                  <SelectItem value="">Ninguno</SelectItem>
+                                  {clients.map(client => (
+                                      <SelectItem key={client.id} value={client.id}>
+                                          {client.name}
+                                      </SelectItem>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                          <FormMessage />
+                      </FormItem>
+                  )}
+              />
+          )}
+        </div>
 
         <JournalEntryLinesTable accounts={accounts} />
         

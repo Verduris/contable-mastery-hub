@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Table,
@@ -29,10 +28,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { JournalEntryForm } from "@/components/JournalEntryForm";
 import { Account } from "@/types/account";
+import { Client } from "@/types/client";
 import { JournalEntry, JournalEntryFormData } from "@/types/journal";
 import { useToast } from "@/hooks/use-toast";
 import { accounts as initialAccounts } from "@/data/accounts";
 import { journalEntries as initialJournalEntries } from "@/data/journalEntries"; // Using mock data for now
+import { clients as initialClients } from "@/data/clients";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ declare module "jspdf" {
 
 const JournalEntries = () => {
   const [accounts] = useState<Account[]>(initialAccounts);
+  const [clients] = useState<Client[]>(initialClients);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(initialJournalEntries);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -61,6 +63,7 @@ const JournalEntries = () => {
       type: data.type,
       status: data.status,
       reference: data.reference,
+      clientId: data.clientId,
       lines: data.lines.map((line, index) => ({
           ...line,
           id: `${journalEntries.length + 1}-${index}`
@@ -103,10 +106,12 @@ const JournalEntries = () => {
   }
 
   const accountMap = new Map(accounts.map(acc => [acc.id, `${acc.code} - ${acc.name}`]));
+  const clientMap = new Map(clients.map(client => [client.id, client.name]));
 
   const handleExportPDF = (entry: JournalEntry) => {
     const doc = new jsPDF();
     const total = calculateTotal(entry.lines);
+    const clientName = entry.clientId ? clientMap.get(entry.clientId) : null;
 
     doc.setFontSize(18);
     doc.text(`Póliza Contable: ${entry.number}`, 14, 22);
@@ -114,11 +119,15 @@ const JournalEntries = () => {
     doc.setFontSize(11);
     doc.setTextColor(100);
     
-    doc.text(`Fecha: ${format(new Date(entry.date), 'PPP', { locale: es })}`, 14, 32);
-    doc.text(`Tipo: ${entry.type}`, 14, 38);
-    doc.text(`Concepto: ${entry.concept}`, 14, 44);
+    let yPos = 32;
+    doc.text(`Fecha: ${format(new Date(entry.date), 'PPP', { locale: es })}`, 14, yPos); yPos += 6;
+    doc.text(`Tipo: ${entry.type}`, 14, yPos); yPos += 6;
+    if (clientName) {
+        doc.text(`Cliente: ${clientName}`, 14, yPos); yPos += 6;
+    }
+    doc.text(`Concepto: ${entry.concept}`, 14, yPos); yPos += 6;
     if(entry.reference) {
-        doc.text(`Referencia: ${entry.reference}`, 14, 50);
+        doc.text(`Referencia: ${entry.reference}`, 14, yPos); yPos += 6;
     }
 
     const tableData = entry.lines.map(line => [
@@ -129,7 +138,7 @@ const JournalEntries = () => {
     ]);
 
     doc.autoTable({
-        startY: entry.reference ? 56 : 50,
+        startY: yPos,
         head: [['Cuenta', 'Descripción', 'Debe', 'Haber']],
         body: tableData,
         foot: [[
@@ -189,6 +198,7 @@ const JournalEntries = () => {
               </DialogHeader>
               <JournalEntryForm 
                 accounts={accounts}
+                clients={clients}
                 onSave={handleSaveEntry} 
                 onCancel={() => setIsDialogOpen(false)}
                 nextEntryNumber={getNextEntryNumber()}
@@ -205,6 +215,7 @@ const JournalEntries = () => {
               <TableHead>Tipo</TableHead>
               <TableHead>Número</TableHead>
               <TableHead>Concepto</TableHead>
+              <TableHead>Cliente</TableHead>
               <TableHead>Estatus</TableHead>
               <TableHead className="text-right">Total</TableHead>
               <TableHead><span className="sr-only">Acciones</span></TableHead>
@@ -217,6 +228,7 @@ const JournalEntries = () => {
                 <TableCell>{entry.type}</TableCell>
                 <TableCell className="font-medium">{entry.number}</TableCell>
                 <TableCell>{entry.concept}</TableCell>
+                <TableCell>{entry.clientId ? clientMap.get(entry.clientId) : 'N/A'}</TableCell>
                 <TableCell>
                   <Badge variant={entry.status === 'Anulada' ? 'destructive' : 'default'} className={cn(
                     entry.status === 'Revisada' && 'bg-green-600 hover:bg-green-700 text-white border-transparent',
