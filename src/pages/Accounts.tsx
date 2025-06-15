@@ -33,7 +33,16 @@ const Accounts = () => {
   const handleSaveAccount = (newAccountData: AddAccountFormData) => {
     const newAccount: Account = {
       id: (accounts.length + 1).toString(), // Simple ID generation
-      ...newAccountData,
+      code: newAccountData.code,
+      name: newAccountData.name,
+      type: newAccountData.type,
+      balance: newAccountData.balance,
+      nature: newAccountData.nature,
+      level: newAccountData.level,
+      status: newAccountData.status,
+      parentId: newAccountData.parentId,
+      satCode: newAccountData.satCode,
+      description: newAccountData.description,
     };
     setAccounts([...accounts, newAccount]);
     setIsDialogOpen(false); // Close dialog on save
