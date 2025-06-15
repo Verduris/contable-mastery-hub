@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     watch: {
+      usePolling: true,
       // Exclude node_modules from file watching to prevent "EMFILE: too many open files" error.
       ignored: ["**/node_modules/**"],
     },
