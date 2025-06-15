@@ -30,13 +30,16 @@ const formSchema = z.object({
   balance: z.coerce.number(),
 });
 
+// Explicitly define a type for our form data based on the schema
+type AddAccountFormData = z.infer<typeof formSchema>;
+
 type AddAccountFormProps = {
   onSave: (account: Omit<Account, 'id' | 'status'>) => void;
   onCancel: () => void;
 };
 
 export const AddAccountForm = ({ onSave, onCancel }: AddAccountFormProps) => {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<AddAccountFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       code: "",
@@ -48,7 +51,7 @@ export const AddAccountForm = ({ onSave, onCancel }: AddAccountFormProps) => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: AddAccountFormData) {
     onSave(values);
   }
 
