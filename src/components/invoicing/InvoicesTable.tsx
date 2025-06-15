@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import {
   Table,
@@ -10,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, AlertTriangle, FileDown, Download } from "lucide-react";
+import { FileText, AlertTriangle, FileDown, Download, FileX } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -27,6 +26,7 @@ interface InvoicesTableProps {
   clientMap: Map<string, string>;
   onDownloadXML: (invoice: Invoice) => void;
   onDownloadPDF: (invoice: Invoice) => void;
+  onCancelInvoice: (invoice: Invoice) => void;
 }
 
 export const InvoicesTable = ({
@@ -34,6 +34,7 @@ export const InvoicesTable = ({
   clientMap,
   onDownloadXML,
   onDownloadPDF,
+  onCancelInvoice,
 }: InvoicesTableProps) => {
   return (
     <TooltipProvider>
@@ -46,7 +47,7 @@ export const InvoicesTable = ({
             <TableHead>Estatus SAT</TableHead>
             <TableHead className="text-right">Monto</TableHead>
             <TableHead>Póliza</TableHead>
-            <TableHead className="text-center w-[120px]">Acciones</TableHead>
+            <TableHead className="text-center w-[160px]">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -144,6 +145,22 @@ export const InvoicesTable = ({
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Descargar PDF</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onCancelInvoice(invoice)}
+                        disabled={invoice.satStatus === 'Cancelada'}
+                      >
+                        <FileX className="h-4 w-4 text-destructive" />
+                        <span className="sr-only">Cancelar Factura</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Cancelar Factura</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>

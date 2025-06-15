@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -7,8 +6,18 @@ import "jspdf-autotable";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-import { fetchInvoices, addInvoice, uploadInvoiceFile } from "@/queries/invoices";
+import { fetchInvoices, addInvoice, uploadInvoiceFile, cancelInvoice } from "@/queries/invoices";
 import { fetchClients } from "@/queries/clients";
 import { initialClients } from "@/data/clients";
 import { Invoice, SatStatus } from "@/types/invoice";
@@ -31,6 +40,8 @@ const Invoicing = () => {
   });
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
+  const [invoiceToCancel, setInvoiceToCancel] = useState<Invoice | null>(null);
   const { toast } = useToast();
 
   const [filters, setFilters] = useState<{
@@ -82,8 +93,43 @@ const Invoicing = () => {
     }
   });
 
+  const cancelInvoiceMutation = useMutation({
+    mutationFn: cancelInvoice,
+    onSuccess: () => {
+        toast({
+            title: "¡Factura Cancelada!",
+            description: "La factura y sus registros asociados han sido cancelados."
+        });
+        queryClient.invalidateQueries({ queryKey: ['invoices'] });
+        queryClient.invalidateQueries({ queryKey: ['receivables'] });
+        queryClient.invalidateQueries({ queryKey: ['journalEntries'] });
+        setIsCancelConfirmOpen(false);
+        setInvoiceToCancel(null);
+    },
+    onError: (error: Error) => {
+        toast({
+            variant: "destructive",
+            title: "Error al cancelar factura",
+            description: error.message,
+        });
+        setIsCancelConfirmOpen(false);
+        setInvoiceToCancel(null);
+    }
+  });
+
   const handleSaveInvoice = (newInvoice: Invoice, file: File) => {
     addInvoiceMutation.mutate({ invoice: newInvoice, file });
+  };
+
+  const handleOpenCancelDialog = (invoice: Invoice) => {
+    setInvoiceToCancel(invoice);
+    setIsCancelConfirmOpen(true);
+  };
+
+  const handleConfirmCancel = () => {
+    if (invoiceToCancel) {
+        cancelInvoiceMutation.mutate(invoiceToCancel.id);
+    }
   };
 
   const filteredInvoices = useMemo(() => {
@@ -220,9 +266,27 @@ const Invoicing = () => {
             clientMap={clientMap}
             onDownloadXML={handleDownloadXML}
             onDownloadPDF={handleDownloadPDF}
+            onCancelInvoice={handleOpenCancelDialog}
           />
         )}
       </CardContent>
+       <AlertDialog open={isCancelConfirmOpen} onOpenChange={setIsCancelConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro de que quieres cancelar esta factura?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se actualizará el estatus de la factura a "Cancelada", 
+              se anulará la póliza contable asociada y se cancelará la cuenta por cobrar correspondiente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setInvoiceToCancel(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmCancel} disabled={cancelInvoiceMutation.isPending}>
+              {cancelInvoiceMutation.isPending ? "Cancelando..." : "Sí, cancelar factura"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

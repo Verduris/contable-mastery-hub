@@ -97,3 +97,14 @@ export const uploadInvoiceFile = async (file: File, invoiceId: string): Promise<
     
     return data.path;
 };
+
+export const cancelInvoice = async (invoiceId: string) => {
+    const { error } = await supabase.rpc('cancel_invoice', {
+        p_invoice_id: invoiceId
+    });
+
+    if (error) {
+        console.error('Error canceling invoice:', error);
+        throw new Error(error.message);
+    }
+};

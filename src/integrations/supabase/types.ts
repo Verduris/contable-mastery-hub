@@ -555,6 +555,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_invoice: {
+        Args: { p_invoice_id: string }
+        Returns: undefined
+      }
       create_invoice_with_relations: {
         Args: {
           p_invoice_id: string
@@ -620,6 +624,7 @@ export type Database = {
         | "Pagada"
         | "Vencida"
         | "Parcialmente Pagada"
+        | "Cancelada"
       account_status: "Activa" | "Inactiva"
       account_type: "Activo" | "Pasivo" | "Capital" | "Ingresos" | "Egresos"
       client_status: "Activo" | "Inactivo"
@@ -755,6 +760,7 @@ export const Constants = {
         "Pagada",
         "Vencida",
         "Parcialmente Pagada",
+        "Cancelada",
       ],
       account_status: ["Activa", "Inactiva"],
       account_type: ["Activo", "Pasivo", "Capital", "Ingresos", "Egresos"],
