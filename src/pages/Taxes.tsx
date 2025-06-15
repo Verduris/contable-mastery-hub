@@ -5,7 +5,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
-import { FeatureCard, RfcValidator, CfdiValidator } from "./taxes";
+import { FeatureCard, RfcValidator, CfdiValidator, FiscalRegimenValidator } from "./taxes";
 import { FileText, Calendar, Bot, FileDown, ShieldQuestion, Database } from 'lucide-react';
 
 const taxFeatures = [
@@ -66,6 +66,10 @@ const Taxes = () => {
                         <div>
                             <h3 className="font-medium mb-2">Validar Estatus de CFDI</h3>
                             <CfdiValidator />
+                        </div>
+                        <div>
+                            <h3 className="font-medium mb-2">Consultar Régimen Fiscal</h3>
+                            <FiscalRegimenValidator />
                         </div>
                     </AccordionContent>
                 </AccordionItem>
