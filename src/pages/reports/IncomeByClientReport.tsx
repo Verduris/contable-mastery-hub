@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from 'react';
 import { Client } from '@/types/client';
 import { JournalEntry, JournalEntryStatus } from '@/types/journal';
@@ -16,7 +17,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
-import { fetchClients } from '@/queries/invoices';
+import { fetchClients } from '@/queries/clients';
 import { fetchJournalEntries } from '@/queries/journalEntries';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -29,7 +30,7 @@ declare module "jspdf" {
 const IncomeByClientReport = () => {
   const { toast } = useToast();
   const { data: clients = [], isLoading: isLoadingClients } = useQuery({ queryKey: ['clients'], queryFn: fetchClients });
-  const { data: journalEntries = [], isLoading: isLoadingJournalEntries } = useQuery({ queryKey: ['journalEntries'], queryFn: () => fetchJournalEntries() });
+  const { data: journalEntries = [], isLoading: isLoadingJournalEntries } = useQuery({ queryKey: ['journalEntries'], queryFn: fetchJournalEntries });
 
   const defaultDateRange: DateRange = { from: subDays(new Date(), 30), to: new Date() };
   const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDateRange);

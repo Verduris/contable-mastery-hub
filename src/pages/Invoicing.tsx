@@ -7,7 +7,8 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { fetchInvoices, addInvoice, fetchClients } from "@/queries/invoices";
+import { fetchInvoices, addInvoice } from "@/queries/invoices";
+import { fetchClients } from "@/queries/clients";
 import { initialClients } from "@/data/clients";
 import { Invoice, SatStatus } from "@/types/invoice";
 import { Client } from "@/types/client";

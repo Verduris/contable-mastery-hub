@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { isWithinInterval } from 'date-fns';
@@ -5,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { fetchPayables } from '@/queries/payables';
 import { fetchJournalEntries } from '@/queries/journalEntries';
-import { fetchClients } from '@/queries/invoices';
+import { fetchClients } from '@/queries/clients';
 import type { JournalEntryStatus } from '@/types/journal';
 
 export const journalStatusOptions: { value: JournalEntryStatus | 'todos'; label: string }[] = [
@@ -23,7 +24,7 @@ interface UseExpensesBySupplierParams {
 
 export const useExpensesBySupplier = ({ date, selectedSupplier, selectedStatus }: UseExpensesBySupplierParams) => {
     const { data: initialPayables = [] } = useQuery({ queryKey: ['payables'], queryFn: fetchPayables });
-    const { data: journalEntries = [] } = useQuery({ queryKey: ['journalEntries'], queryFn: () => fetchJournalEntries() });
+    const { data: journalEntries = [] } = useQuery({ queryKey: ['journalEntries'], queryFn: fetchJournalEntries });
     const { data: suppliers = [] } = useQuery({ queryKey: ['clients'], queryFn: fetchClients });
     
     const supplierMap = useMemo(() => new Map(suppliers.map(c => [c.id, c.name])), [suppliers]);
