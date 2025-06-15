@@ -26,20 +26,14 @@ import { Account } from "@/types/account";
 import { useToast } from "@/components/ui/use-toast";
 
 const Accounts = () => {
-  const [accounts, setAccounts] = useState(initialAccounts);
+  const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const handleSaveAccount = (newAccountData: AddAccountFormData) => {
     const newAccount: Account = {
       id: (accounts.length + 1).toString(), // Simple ID generation
-      status: 'Activa',
-      code: newAccountData.code,
-      name: newAccountData.name,
-      type: newAccountData.type,
-      nature: newAccountData.nature,
-      level: newAccountData.level,
-      balance: newAccountData.balance,
+      ...newAccountData,
     };
     setAccounts([...accounts, newAccount]);
     setIsDialogOpen(false); // Close dialog on save
@@ -64,7 +58,7 @@ const Accounts = () => {
                 Agregar Cuenta
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Agregar Nueva Cuenta</DialogTitle>
                 <DialogDescription>
@@ -72,6 +66,7 @@ const Accounts = () => {
                 </DialogDescription>
               </DialogHeader>
               <AddAccountForm 
+                accounts={accounts}
                 onSave={handleSaveAccount} 
                 onCancel={() => setIsDialogOpen(false)}
               />

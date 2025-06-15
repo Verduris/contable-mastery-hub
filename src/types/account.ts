@@ -8,4 +8,7 @@ export type Account = {
   nature: 'Deudora' | 'Acreedora';
   level: number;
   status: 'Activa' | 'Inactiva';
+  parentId?: string | null;
+  satCode?: string;
+  description?: string;
 };
