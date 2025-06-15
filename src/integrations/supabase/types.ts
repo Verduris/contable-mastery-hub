@@ -110,6 +110,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "accounts_payable_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "accounts_payable_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
@@ -164,6 +171,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]
@@ -274,6 +288,57 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          amount: number
+          cfdi_use: string
+          client_id: string
+          created_at: string
+          date: string
+          file_name: string | null
+          id: string
+          journal_entry_id: string | null
+          sat_status: Database["public"]["Enums"]["invoice_sat_status"]
+        }
+        Insert: {
+          amount: number
+          cfdi_use: string
+          client_id: string
+          created_at?: string
+          date: string
+          file_name?: string | null
+          id: string
+          journal_entry_id?: string | null
+          sat_status: Database["public"]["Enums"]["invoice_sat_status"]
+        }
+        Update: {
+          amount?: number
+          cfdi_use?: string
+          client_id?: string
+          created_at?: string
+          date?: string
+          file_name?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          sat_status?: Database["public"]["Enums"]["invoice_sat_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_entries: {
         Row: {
           client_id: string | null
@@ -311,7 +376,22 @@ export type Database = {
           status?: Database["public"]["Enums"]["journal_entry_status"]
           type?: Database["public"]["Enums"]["journal_entry_type"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "journal_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       journal_entry_lines: {
         Row: {
@@ -475,6 +555,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_invoice_with_relations: {
+        Args: {
+          p_invoice_id: string
+          p_client_id: string
+          p_date: string
+          p_amount: number
+          p_cfdi_use: string
+          p_sat_status: Database["public"]["Enums"]["invoice_sat_status"]
+          p_file_name: string
+        }
+        Returns: string
+      }
       mark_payable_as_paid: {
         Args: { p_payable_id: string }
         Returns: undefined
@@ -531,6 +623,7 @@ export type Database = {
       account_status: "Activa" | "Inactiva"
       account_type: "Activo" | "Pasivo" | "Capital" | "Ingresos" | "Egresos"
       client_status: "Activo" | "Inactivo"
+      invoice_sat_status: "Vigente" | "Cancelada"
       journal_entry_status: "Borrador" | "Revisada" | "Anulada"
       journal_entry_type: "Ingreso" | "Egreso" | "Diario"
       person_type: "Física" | "Moral"
@@ -666,6 +759,7 @@ export const Constants = {
       account_status: ["Activa", "Inactiva"],
       account_type: ["Activo", "Pasivo", "Capital", "Ingresos", "Egresos"],
       client_status: ["Activo", "Inactivo"],
+      invoice_sat_status: ["Vigente", "Cancelada"],
       journal_entry_status: ["Borrador", "Revisada", "Anulada"],
       journal_entry_type: ["Ingreso", "Egreso", "Diario"],
       person_type: ["Física", "Moral"],

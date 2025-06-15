@@ -25,7 +25,6 @@ import {
 interface InvoicesTableProps {
   invoices: Invoice[];
   clientMap: Map<string, string>;
-  journalEntryMap: Map<string, string>;
   onDownloadXML: (invoice: Invoice) => void;
   onDownloadPDF: (invoice: Invoice) => void;
 }
@@ -33,7 +32,6 @@ interface InvoicesTableProps {
 export const InvoicesTable = ({
   invoices,
   clientMap,
-  journalEntryMap,
   onDownloadXML,
   onDownloadPDF,
 }: InvoicesTableProps) => {
@@ -92,7 +90,7 @@ export const InvoicesTable = ({
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  {invoice.journalEntryId ? (
+                  {invoice.journalEntry ? (
                     <Button
                       variant="link"
                       asChild
@@ -100,7 +98,7 @@ export const InvoicesTable = ({
                     >
                       <Link to="/polizas">
                         <FileText className="mr-2 h-4 w-4" />
-                        {journalEntryMap.get(invoice.journalEntryId)}
+                        {invoice.journalEntry.number}
                       </Link>
                     </Button>
                   ) : (

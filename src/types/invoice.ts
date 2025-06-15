@@ -13,4 +13,8 @@ export type Invoice = {
   satStatus: SatStatus;
   journalEntryId?: string;
   fileName?: string;
+  journalEntry?: {
+    id: string;
+    number: string;
+  };
 };
