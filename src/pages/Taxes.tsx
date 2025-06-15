@@ -1,4 +1,3 @@
-
 import {
     Accordion,
     AccordionContent,
@@ -54,7 +53,8 @@ const taxFeatures: TaxFeature[] = [
         title: "Contabilidad Electrónica",
         description: "Genera reportes contables (Catálogo, Balanza, Pólizas) en formato XML para el SAT. (Art. 28 CFF)",
         icon: <Database className="h-6 w-6 text-primary" />,
-        status: "coming_soon",
+        status: "available",
+        href: "/contabilidad-electronica",
     },
     {
         title: "Simulador de Fiscalización",
