@@ -15,6 +15,7 @@ export const initialReceivables: AccountReceivable[] = [
     outstandingBalance: 15000,
     status: 'Pendiente',
     notes: 'Factura #F001. A la espera de pago.',
+    paymentHistory: [],
   },
   {
     id: 'cxc-2',
@@ -26,6 +27,9 @@ export const initialReceivables: AccountReceivable[] = [
     outstandingBalance: 15000,
     status: 'Vencida',
     notes: 'Factura #F002. Cliente contactado, prometen pago pronto.',
+    paymentHistory: [
+      { id: 'pay-1', date: subDays(today, 20).toISOString(), amount: 5000, notes: 'Abono inicial' }
+    ],
   },
   {
     id: 'cxc-3',
@@ -38,6 +42,9 @@ export const initialReceivables: AccountReceivable[] = [
     status: 'Pagada',
     notes: 'Factura #F003. Pago contra entrega.',
     invoiceId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+    paymentHistory: [
+      { id: 'pay-2', date: subDays(today, 10).toISOString(), amount: 5000, notes: 'Pago completo' }
+    ],
   },
   {
     id: 'cxc-4',
@@ -48,6 +55,10 @@ export const initialReceivables: AccountReceivable[] = [
     paidAmount: 10000,
     outstandingBalance: 25000,
     status: 'Parcialmente Pagada',
+    notes: 'Primer abono registrado. A la espera del pago restante.',
+    paymentHistory: [
+      { id: 'pay-3', date: subDays(today, 2).toISOString(), amount: 10000, notes: 'Primer abono' }
+    ],
   },
   {
     id: 'cxc-5',
@@ -59,5 +70,6 @@ export const initialReceivables: AccountReceivable[] = [
     outstandingBalance: 12000,
     status: 'Pendiente',
     notes: 'Factura #F005.',
+    paymentHistory: [],
   },
 ];

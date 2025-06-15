@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import {
   Table,
@@ -9,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { CircleX, CircleAlert, CircleCheck, MoreHorizontal, Wallet } from "lucide-react";
+import { MoreHorizontal, Wallet, CircleCheck, FileDown, FileText, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,7 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -32,18 +30,33 @@ import { useToast } from "@/hooks/use-toast";
 import { differenceInDays, format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { getStatusInfo, getBadgeVariant } from '@/utils/receivableUtils';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const AccountsReceivable = () => {
   const [receivables, setReceivables] = useState<AccountReceivable[]>(initialReceivables);
   const [clientFilter, setClientFilter] = useState<string>("Todos");
   const [statusFilter, setStatusFilter] = useState<AccountReceivableStatus | "Todos">("Todos");
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedReceivable, setSelectedReceivable] = useState<AccountReceivable | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
 
   const { toast } = useToast();
 
-  const clientMap = useMemo(() => new Map(initialClients.map(c => [c.id, c.name])), []);
+  const clientData = useMemo(() => new Map(initialClients.map(c => [c.id, c])), []);
+  
+  const clientTotalOutstanding = useMemo(() => {
+    const totals = new Map<string, number>();
+    receivables.forEach(r => {
+      if (r.status !== 'Pagada') {
+        const current = totals.get(r.clientId) || 0;
+        totals.set(r.clientId, current + r.outstandingBalance);
+      }
+    });
+    return totals;
+  }, [receivables]);
 
   const filteredReceivables = useMemo(() => {
     return receivables.filter(r => {
@@ -69,6 +82,11 @@ const AccountsReceivable = () => {
     setIsPaymentDialogOpen(true);
   };
 
+  const openDetailsDialog = (receivable: AccountReceivable) => {
+    setSelectedReceivable(receivable);
+    setIsDetailsDialogOpen(true);
+  };
+
   const handleRecordPayment = () => {
     if (!selectedReceivable || paymentAmount <= 0) return;
 
@@ -82,19 +100,55 @@ const AccountsReceivable = () => {
         } else if (differenceInDays(new Date(), parseISO(r.dueDate)) > 0) {
             newStatus = 'Vencida';
         }
+        
+        const newPayment = {
+            id: `pay-${Date.now()}`,
+            date: new Date().toISOString(),
+            amount: paymentAmount,
+        };
+        const updatedPaymentHistory = [...(r.paymentHistory || []), newPayment];
+
         return {
           ...r,
           paidAmount: newPaidAmount,
           outstandingBalance: newOutstandingBalance,
           status: newStatus,
+          paymentHistory: updatedPaymentHistory,
         };
       }
       return r;
     }));
-    toast({ title: "Abono registrado", description: `Se ha registrado un pago por ${paymentAmount.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}.` });
+    toast({ title: "Cobro registrado", description: `Se ha registrado un pago por ${paymentAmount.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}.` });
     setIsPaymentDialogOpen(false);
     setSelectedReceivable(null);
     setPaymentAmount(0);
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Cuentas por Cobrar", 14, 16);
+    
+    const tableColumn = ["Cliente", "F. Vencimiento", "Saldo Pendiente", "Estatus"];
+    const tableRows: any[] = [];
+
+    filteredReceivables.forEach(r => {
+      const receivableData = [
+        clientData.get(r.clientId)?.name || 'N/A',
+        format(parseISO(r.dueDate), 'dd/MMM/yy', { locale: es }),
+        r.outstandingBalance.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' }),
+        r.status
+      ];
+      tableRows.push(receivableData);
+    });
+
+    (doc as any).autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+    });
+    
+    doc.save('cuentas_por_cobrar.pdf');
+    toast({ title: "PDF Exportado", description: "La tabla de cuentas por cobrar ha sido exportada." });
   };
 
   const getStatusInfo = (receivable: AccountReceivable): { icon: React.ReactNode, tooltip: string, colorClass: string } => {
@@ -131,6 +185,9 @@ const AccountsReceivable = () => {
               <CardTitle>Cuentas por Cobrar (CXC)</CardTitle>
               <CardDescription>Gestiona y da seguimiento a los cobros pendientes.</CardDescription>
             </div>
+            <Button onClick={handleExportPDF} variant="outline">
+                <FileDown className="mr-2" /> Exportar a PDF
+            </Button>
           </div>
           <div className="mt-4 flex flex-col md:flex-row items-center gap-4">
             <Select value={clientFilter} onValueChange={setClientFilter}>
@@ -174,9 +231,29 @@ const AccountsReceivable = () => {
               {filteredReceivables.map((r) => {
                 const statusInfo = getStatusInfo(r);
                 const daysDiff = differenceInDays(parseISO(r.dueDate), new Date());
+                const client = clientData.get(r.clientId);
+                const totalOutstanding = clientTotalOutstanding.get(r.clientId) || 0;
+                const creditLimitExceeded = client && client.creditLimit && client.creditLimit > 0 && totalOutstanding > client.creditLimit;
+
                 return (
                   <TableRow key={r.id} className={cn(r.status === 'Pagada' && 'text-muted-foreground')}>
-                    <TableCell className="font-medium">{clientMap.get(r.clientId) || 'N/A'}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <span>{client?.name || 'N/A'}</span>
+                        {creditLimitExceeded && (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <AlertTriangle className="text-destructive" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Límite de crédito excedido.</p>
+                              <p>Límite: {client?.creditLimit?.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</p>
+                              <p>Saldo Total: {totalOutstanding.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{format(parseISO(r.issueDate), 'dd/MMM/yy', { locale: es })}</TableCell>
                     <TableCell>{format(parseISO(r.dueDate), 'dd/MMM/yy', { locale: es })}</TableCell>
                     <TableCell className={cn("text-center font-medium", statusInfo.colorClass)}>
@@ -198,15 +275,18 @@ const AccountsReceivable = () => {
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0" disabled={r.status === 'Pagada'}>
                             <span className="sr-only">Abrir menú</span>
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                           <DropdownMenuItem onClick={() => openDetailsDialog(r)}>
+                            <FileText className="mr-2" /> Ver Detalles
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openPaymentDialog(r)}>
-                            <Wallet className="mr-2 h-4 w-4" /> Registrar Abono
+                            <Wallet className="mr-2" /> Registrar Cobro
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleMarkAsPaid(r.id)}>
-                            <CircleCheck className="mr-2 h-4 w-4" /> Marcar como Pagada
+                            <CircleCheck className="mr-2" /> Marcar como Pagada
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -222,9 +302,9 @@ const AccountsReceivable = () => {
       <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Registrar Abono</DialogTitle>
+            <DialogTitle>Registrar Cobro</DialogTitle>
             <DialogDescription>
-              Cliente: {selectedReceivable && clientMap.get(selectedReceivable.clientId)}
+              Cliente: {selectedReceivable && clientData.get(selectedReceivable.clientId)?.name}
               <br />
               Saldo pendiente: {selectedReceivable?.outstandingBalance.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
             </DialogDescription>
@@ -243,7 +323,56 @@ const AccountsReceivable = () => {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsPaymentDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleRecordPayment}>Guardar Pago</Button>
+            <Button onClick={handleRecordPayment}>Guardar Cobro</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Detalles de la Cuenta por Cobrar</DialogTitle>
+            <DialogDescription>
+              Cliente: {selectedReceivable && clientData.get(selectedReceivable.clientId)?.name}
+              <br />
+              Factura ID: {selectedReceivable?.invoiceId || 'N/A'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 py-4">
+            <div>
+              <h4 className="font-semibold mb-2 text-sm">Notas Internas</h4>
+              <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md min-h-[60px]">{selectedReceivable?.notes || 'No hay notas.'}</p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-2 text-sm">Historial de Pagos</h4>
+              {selectedReceivable?.paymentHistory && selectedReceivable.paymentHistory.length > 0 ? (
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Notas</TableHead>
+                        <TableHead className="text-right">Monto</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedReceivable.paymentHistory.map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell>{format(parseISO(p.date), 'dd/MMM/yyyy', { locale: es })}</TableCell>
+                          <TableCell className="text-muted-foreground">{p.notes || ''}</TableCell>
+                          <TableCell className="text-right font-mono">{p.amount.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No hay pagos registrados.</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => { setIsDetailsDialogOpen(false); setSelectedReceivable(null); }}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

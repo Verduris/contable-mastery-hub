@@ -1,6 +1,13 @@
 
 export type AccountReceivableStatus = 'Pendiente' | 'Pagada' | 'Vencida' | 'Parcialmente Pagada';
 
+export type Payment = {
+  id: string;
+  date: string; // ISO date string
+  amount: number;
+  notes?: string;
+};
+
 export type AccountReceivable = {
   id: string;
   clientId: string;
@@ -12,4 +19,5 @@ export type AccountReceivable = {
   outstandingBalance: number;
   status: AccountReceivableStatus;
   notes?: string;
+  paymentHistory?: Payment[];
 };
