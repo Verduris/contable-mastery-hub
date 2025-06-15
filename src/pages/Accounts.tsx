@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { AddAccountForm, type AddAccountFormData } from "@/components/AddAccountForm";
 import { Account } from "@/types/account";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const Accounts = () => {
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
