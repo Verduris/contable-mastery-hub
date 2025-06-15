@@ -42,7 +42,7 @@ export async function fetchJournalEntries(clientId?: string): Promise<JournalEnt
     date: entry.date,
     concept: entry.concept,
     type: entry.type,
-    status: entry.status,
+    status: entry.status as JournalEntryStatus,
     reference: entry.reference || undefined,
     clientId: entry.client_id || undefined,
     invoiceId: entry.invoice_id || undefined,
