@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +22,7 @@ import ExpensesBySupplierReport from "./pages/reports/ExpensesBySupplierReport";
 import IncomeStatementReport from "./pages/reports/IncomeStatementReport";
 import CashFlowReport from "./pages/reports/CashFlowReport";
 import RankingReport from './pages/reports/RankingReport';
+import AgingReport from './pages/reports/AgingReport';
 
 const queryClient = new QueryClient();
 
@@ -50,6 +50,7 @@ const App = () => (
             <Route path="/reportes/estado-de-resultados" element={<IncomeStatementReport />} />
             <Route path="/reportes/flujo-de-caja" element={<CashFlowReport />} />
             <Route path="/reportes/ranking-clientes-proveedores" element={<RankingReport />} />
+            <Route path="/reportes/vencimientos" element={<AgingReport />} />
             <Route path="/facturacion" element={<Invoicing />} />
             <Route path="/impuestos" element={<Taxes />} />
             <Route path="/agenda" element={<TaxCalendar />} />

@@ -1,7 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowRight, BarChart, LineChart } from 'lucide-react';
+import { ArrowRight, BarChart, LineChart, Clock } from 'lucide-react';
 
 const reports = [
     {
@@ -33,6 +33,12 @@ const reports = [
         description: 'Visualiza el top 5 de clientes con más ingresos y proveedores con más egresos.',
         link: '/reportes/ranking-clientes-proveedores',
         icon: <BarChart className="w-6 h-6 text-primary" />,
+    },
+    {
+        title: 'Reporte de Vencimientos',
+        description: 'Analiza cuentas por cobrar y pagar, agrupadas por su estado de vencimiento.',
+        link: '/reportes/vencimientos',
+        icon: <Clock className="w-6 h-6 text-primary" />,
     },
     // Futuros reportes se pueden agregar aquí
 ];
