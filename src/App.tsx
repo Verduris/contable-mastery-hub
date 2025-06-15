@@ -1,9 +1,20 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import Layout from "./pages/Layout";
+import Dashboard from "./pages/Dashboard";
+import Accounts from "./pages/Accounts";
+import JournalEntries from "./pages/JournalEntries";
+import Clients from "./pages/Clients";
+import Reports from "./pages/Reports";
+import Invoicing from "./pages/Invoicing";
+import Taxes from "./pages/Taxes";
+import TaxCalendar from "./pages/TaxCalendar";
+import LearningCenter from "./pages/LearningCenter";
+import CourseDetail from "./pages/CourseDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -15,9 +26,19 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
+          <Route element={<Layout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/cuentas" element={<Accounts />} />
+            <Route path="/polizas" element={<JournalEntries />} />
+            <Route path="/clientes" element={<Clients />} />
+            <Route path="/reportes" element={<Reports />} />
+            <Route path="/facturacion" element={<Invoicing />} />
+            <Route path="/impuestos" element={<Taxes />} />
+            <Route path="/agenda" element={<TaxCalendar />} />
+            <Route path="/aprendizaje" element={<LearningCenter />} />
+            <Route path="/aprendizaje/:courseId" element={<CourseDetail />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
