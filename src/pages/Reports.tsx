@@ -1,4 +1,50 @@
 
-import { PlaceholderPage } from './placeholders';
-const Reports = () => <PlaceholderPage title="Reportes" />;
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ArrowRight, BarChart } from 'lucide-react';
+
+const reports = [
+    {
+        title: 'Ingresos por Cliente',
+        description: 'Analiza los ingresos totales agrupados por cada cliente en un periodo de tiempo.',
+        link: '/reportes/ingresos-por-cliente',
+        icon: <BarChart className="w-6 h-6 text-primary" />,
+    },
+    // Futuros reportes se pueden agregar aquí
+];
+
+const Reports = () => {
+    return (
+        <div className="space-y-6">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Módulo de Reportes</h1>
+                <p className="text-muted-foreground">Selecciona un reporte para visualizar y analizar tus datos.</p>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {reports.map((report) => (
+                    <Link to={report.link} key={report.title} className="group block">
+                        <Card className="h-full transition-all group-hover:border-primary group-hover:shadow-md">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-lg font-semibold">
+                                    {report.title}
+                                </CardTitle>
+                                {report.icon}
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-muted-foreground">{report.description}</p>
+                            </CardContent>
+                             <div className="flex items-center p-6 pt-0">
+                                <div className="text-sm font-medium text-primary flex items-center">
+                                    Ver Reporte
+                                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                </div>
+                            </div>
+                        </Card>
+                    </Link>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 export default Reports;

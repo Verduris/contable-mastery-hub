@@ -16,6 +16,7 @@ import TaxCalendar from "./pages/TaxCalendar";
 import LearningCenter from "./pages/LearningCenter";
 import CourseDetail from "./pages/CourseDetail";
 import NotFound from "./pages/NotFound";
+import IncomeByClientReport from "./pages/reports/IncomeByClientReport";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/polizas" element={<JournalEntries />} />
             <Route path="/clientes" element={<Clients />} />
             <Route path="/reportes" element={<Reports />} />
+            <Route path="/reportes/ingresos-por-cliente" element={<IncomeByClientReport />} />
             <Route path="/facturacion" element={<Invoicing />} />
             <Route path="/impuestos" element={<Taxes />} />
             <Route path="/agenda" element={<TaxCalendar />} />
