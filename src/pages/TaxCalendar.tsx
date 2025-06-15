@@ -1,13 +1,15 @@
+
 import { useState, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { parseISO, isSameDay, isBefore, differenceInDays, startOfToday } from 'date-fns';
-import { CalendarDays, FileText, CheckCircle2, XCircle, Clock, AlertTriangle, Plus, Link as LinkIcon, Filter, Info, Loader2 } from 'lucide-react';
+import { CalendarDays, FileText, CheckCircle2, XCircle, Clock, AlertTriangle, Plus, Link as LinkIcon, Filter, Info, Loader2, FileUp, ReceiptText } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Link } from 'react-router-dom';
 import { AddTaxEventDialog } from '@/components/AddTaxEventDialog';
+import { UploadReceiptDialog } from '@/components/UploadReceiptDialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
@@ -275,11 +277,27 @@ const TaxCalendar = () => {
                                     </CardHeader>
                                     <CardContent>
                                         <p className="text-sm text-muted-foreground mb-4">{event.description}</p>
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-wrap gap-2 items-center">
                                         {(status.originalStatus === 'Pendiente' || status.originalStatus === 'Vencido' ) && (
-                                            <Button size="sm" onClick={() => handleMarkAsPresented(event.id)}>
-                                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                            <Button size="sm" onClick={() => handleMarkAsPresented(event.id)} disabled={updateEventStatusMutation.isPending}>
+                                                {updateEventStatusMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
                                                 Marcar como Presentado
+                                            </Button>
+                                        )}
+                                        {event.status === 'Presentado' && !event.receipt_url && (
+                                            <UploadReceiptDialog eventId={event.id}>
+                                                <Button size="sm" variant="outline">
+                                                    <FileUp className="mr-2 h-4 w-4" />
+                                                    Subir Acuse
+                                                </Button>
+                                            </UploadReceiptDialog>
+                                        )}
+                                        {event.receipt_url && (
+                                            <Button size="sm" variant="outline" asChild>
+                                                <a href={event.receipt_url} target="_blank" rel="noopener noreferrer">
+                                                    <ReceiptText className="mr-2 h-4 w-4" />
+                                                    Ver Acuse
+                                                </a>
                                             </Button>
                                         )}
                                         {event.link && (
