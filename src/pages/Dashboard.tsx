@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { es } from 'date-fns/locale';
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchReceivables } from '@/queries/receivables';
-import { initialPayables } from '@/data/payables';
+import { fetchPayables } from '@/queries/payables';
 import { initialClients } from '@/data/clients';
 import { journalEntries } from '@/data/journalEntries';
 import { cn } from '@/lib/utils';
@@ -37,6 +38,7 @@ const StatCard = ({ title, value, icon: Icon, linkTo, colorClass }: { title: str
 
 const Dashboard = () => {
   const { data: initialReceivables = [] } = useQuery({ queryKey: ['receivables'], queryFn: fetchReceivables });
+  const { data: initialPayables = [] } = useQuery({ queryKey: ['payables'], queryFn: fetchPayables });
   const clientMap = useMemo(() => new Map(initialClients.map(c => [c.id, c.name])), []);
 
   const financialMetrics = useMemo(() => {
@@ -128,7 +130,7 @@ const Dashboard = () => {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
-  }, [clientMap]);
+  }, [clientMap, initialPayables]);
   
   const alerts = useMemo(() => {
     const topOverdueReceivables = initialReceivables
