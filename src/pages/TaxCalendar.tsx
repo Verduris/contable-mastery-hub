@@ -1,10 +1,11 @@
+
 import { useState, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { parseISO, isSameDay, isBefore, differenceInDays, startOfToday } from 'date-fns';
-import { CalendarDays, FileText, CheckCircle2, XCircle, Clock, AlertTriangle, Plus, Link as LinkIcon, Filter, Info, Loader2, FileUp, ReceiptText } from 'lucide-react';
+import { CalendarDays, FileText, CheckCircle2, XCircle, Clock, AlertTriangle, Plus, Link as LinkIcon, Filter, Loader2, FileUp, ReceiptText } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Link } from 'react-router-dom';
 import { AddTaxEventDialog } from '@/components/AddTaxEventDialog';
@@ -19,21 +20,21 @@ type TaxEventStatus = Database['public']['Enums']['tax_event_status'];
 const statusConfig: Record<TaxEventStatus, {
     label: string;
     icon: React.ElementType;
-    badgeVariant: 'success' | 'warning' | 'destructive';
+    badgeVariant: 'default' | 'destructive' | 'secondary';
     color: string;
     bgColor: string;
 }> = {
-    'Presentado': { label: 'Presentado', icon: CheckCircle2, badgeVariant: 'success', color: '#166534', bgColor: '#dcfce7' },
+    'Presentado': { label: 'Presentado', icon: CheckCircle2, badgeVariant: 'default', color: '#166534', bgColor: '#dcfce7' },
     'Vencido': { label: 'Vencido', icon: XCircle, badgeVariant: 'destructive', color: '#991b1b', bgColor: '#fee2e2' },
-    'Pendiente': { label: 'Pendiente', icon: Clock, badgeVariant: 'warning', color: '#a16207', bgColor: '#fef9c3' },
+    'Pendiente': { label: 'Pendiente', icon: Clock, badgeVariant: 'secondary', color: '#a16207', bgColor: '#fef9c3' },
 };
 
 const dueSoonConfig = {
     label: 'Por Vencer',
     icon: AlertTriangle,
-    badgeVariant: 'warning' as const,
-    color: '#b45309', // text-amber-600
-    bgColor: '#fef3c7' // bg-amber-100
+    badgeVariant: 'secondary' as const,
+    color: '#b45309',
+    bgColor: '#fef3c7'
 };
 
 const TaxCalendar = () => {
@@ -78,7 +79,6 @@ const TaxCalendar = () => {
 
         if (event.status === 'Pendiente') {
             if (isBefore(eventDate, today)) {
-                // Return as 'Vencido' if pending and past due
                 return { ...statusConfig['Vencido'], originalStatus: 'Vencido' as TaxEventStatus };
             }
             const daysUntilDue = differenceInDays(eventDate, today);
@@ -104,7 +104,6 @@ const TaxCalendar = () => {
             if (!acc[key]) {
                 acc[key] = [];
             }
-            // Ensure no duplicate dates in modifiers
             if (!acc[key].find(d => isSameDay(d, eventDate))) {
                 acc[key].push(eventDate);
             }
@@ -267,7 +266,7 @@ const TaxCalendar = () => {
                                     <CardHeader className="pb-4">
                                         <div className="flex justify-between items-start gap-2">
                                             <CardTitle className="text-base leading-tight flex items-center gap-2">
-                                                <StatusIcon className={`h-5 w-5 flex-shrink-0 ${status.label === 'Por Vencer' ? 'text-amber-600' : status.badgeVariant === 'success' ? 'text-green-600' : status.badgeVariant === 'destructive' ? 'text-red-600' : 'text-yellow-600'}`} />
+                                                <StatusIcon className={`h-5 w-5 flex-shrink-0 ${status.label === 'Por Vencer' ? 'text-amber-600' : status.badgeVariant === 'default' ? 'text-green-600' : status.badgeVariant === 'destructive' ? 'text-red-600' : 'text-yellow-600'}`} />
                                                 <span>{event.title}</span>
                                             </CardTitle>
                                             <Badge variant={status.badgeVariant} className="flex-shrink-0">{status.label}</Badge>
