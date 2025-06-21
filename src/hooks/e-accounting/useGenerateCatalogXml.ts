@@ -7,12 +7,27 @@ import { useToast } from '@/hooks/use-toast';
 export const useGenerateCatalogXml = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { data: accounts = [] } = useQuery({ 
+  
+  const { data: accounts = [], error: accountsError } = useQuery({ 
     queryKey: ['accounts'], 
     queryFn: fetchAccounts 
   });
 
+  // Handle accounts query error
+  if (accountsError) {
+    console.error('Error fetching accounts:', accountsError);
+  }
+
   const generateXml = async () => {
+    if (!accounts || accounts.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No hay cuentas disponibles para generar el XML.",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Generate XML content for catalog
@@ -52,10 +67,11 @@ export const useGenerateCatalogXml = () => {
         description: "El catálogo de cuentas se ha descargado correctamente.",
       });
     } catch (error) {
+      console.error('Error generating XML:', error);
       toast({
         variant: "destructive",
         title: "Error al generar XML",
-        description: "Ocurrió un error al generar el archivo XML.",
+        description: error instanceof Error ? error.message : "Ocurrió un error al generar el archivo XML.",
       });
     } finally {
       setIsLoading(false);

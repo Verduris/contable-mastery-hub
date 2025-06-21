@@ -30,37 +30,51 @@ export function UploadReceiptDialog({ children, eventId }: UploadReceiptDialogPr
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      // Create a simple data URL for the file (for demo purposes)
-      // In a real implementation, you would upload to Supabase Storage
-      const reader = new FileReader();
-      return new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      try {
+        // Create a simple data URL for the file (for demo purposes)
+        // In a real implementation, you would upload to Supabase Storage
+        const reader = new FileReader();
+        return new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Error reading file'));
+          reader.readAsDataURL(file);
+        });
+      } catch (error) {
+        console.error('Error processing file:', error);
+        throw new Error('Error al procesar el archivo');
+      }
     },
     onSuccess: async (dataUrl) => {
-      // Update the tax event with the receipt URL
-      const { error } = await supabase
-        .from('tax_events')
-        .update({ receipt_url: dataUrl })
-        .eq('id', eventId);
+      try {
+        // Update the tax event with the receipt URL
+        const { error } = await supabase
+          .from('tax_events')
+          .update({ receipt_url: dataUrl })
+          .eq('id', eventId);
 
-      if (error) throw error;
+        if (error) {
+          console.error('Supabase error:', error);
+          throw new Error(error.message);
+        }
 
-      queryClient.invalidateQueries({ queryKey: ['tax_events'] });
-      setOpen(false);
-      setFile(null);
-      toast({
-        title: "Acuse subido",
-        description: "El acuse se ha subido correctamente.",
-      });
+        queryClient.invalidateQueries({ queryKey: ['tax_events'] });
+        setOpen(false);
+        setFile(null);
+        toast({
+          title: "Acuse subido",
+          description: "El acuse se ha subido correctamente.",
+        });
+      } catch (error) {
+        console.error('Error updating tax event:', error);
+        throw error;
+      }
     },
     onError: (error: Error) => {
+      console.error('Upload mutation error:', error);
       toast({
         variant: "destructive",
         title: "Error al subir acuse",
-        description: error.message,
+        description: error.message || "Ocurrió un error al subir el acuse.",
       });
     }
   });
