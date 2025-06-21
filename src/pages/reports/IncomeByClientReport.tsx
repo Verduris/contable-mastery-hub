@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Client } from '@/types/client';
-import { JournalEntry, JournalEntryStatus } from '@/types/journal';
+
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -15,10 +14,9 @@ import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery } from '@tanstack/react-query';
-import { fetchClients } from '@/queries/clients';
-import { fetchJournalEntries } from '@/queries/journalEntries';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useIncomeByClient } from '@/hooks/reports/useIncomeByClient';
+import type { JournalEntryStatus } from '@/types/journal';
 
 declare module "jspdf" {
   interface jsPDF {
@@ -28,56 +26,16 @@ declare module "jspdf" {
 
 const IncomeByClientReport = () => {
   const { toast } = useToast();
-  const { data: clients = [], isLoading: isLoadingClients } = useQuery({ queryKey: ['clients'], queryFn: fetchClients });
-  const { data: journalEntries = [], isLoading: isLoadingJournalEntries } = useQuery({ queryKey: ['journalEntries'], queryFn: () => fetchJournalEntries() });
-
   const defaultDateRange: DateRange = { from: subDays(new Date(), 30), to: new Date() };
   const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDateRange);
   const [selectedClientId, setSelectedClientId] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<JournalEntryStatus | 'all'>('Revisada');
 
-  const calculateEntryTotal = (lines: JournalEntry['lines']) => {
-    return lines.reduce((sum, line) => sum + line.debit, 0);
-  };
-  
-  const reportData = useMemo(() => {
-    if (isLoadingClients || isLoadingJournalEntries) return [];
-    
-    const clientMap = new Map(clients.map(c => [c.id, c]));
-
-    const filteredEntries = journalEntries.filter(entry => {
-      if (entry.type !== 'Ingreso') return false;
-      if (selectedStatus !== 'all' && entry.status !== selectedStatus) return false;
-      if (selectedClientId !== 'all' && entry.clientId !== selectedClientId) return false;
-      const entryDate = new Date(entry.date);
-      if (dateRange?.from && entryDate < dateRange.from) return false;
-      if (dateRange?.to && entryDate > dateRange.to) return false;
-      return true;
-    });
-
-    const incomeByClient = filteredEntries.reduce((acc, entry) => {
-      if (!entry.clientId) return acc;
-      if (!acc[entry.clientId]) {
-        acc[entry.clientId] = { totalAmount: 0, count: 0 };
-      }
-      acc[entry.clientId].totalAmount += calculateEntryTotal(entry.lines);
-      acc[entry.clientId].count++;
-      return acc;
-    }, {} as Record<string, { totalAmount: number; count: number }>);
-    
-    return Object.entries(incomeByClient).map(([clientId, data]) => {
-      const client = clientMap.get(clientId);
-      return {
-        clientId,
-        clientName: client?.name || 'Cliente Desconocido',
-        totalIncomeEntries: data.count,
-        totalAmountReceived: data.totalAmount,
-        currentBalance: client?.balance || 0,
-      };
-    }).sort((a, b) => b.totalAmountReceived - a.totalAmountReceived);
-  }, [journalEntries, clients, dateRange, selectedClientId, selectedStatus, isLoadingClients, isLoadingJournalEntries]);
-  
-  const isLoading = isLoadingClients || isLoadingJournalEntries;
+  const { reportData, clients, isLoading } = useIncomeByClient({
+    dateRange,
+    selectedClientId,
+    selectedStatus
+  });
 
   const handleExportPDF = () => {
     const doc = new jsPDF();

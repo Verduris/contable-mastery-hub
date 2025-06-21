@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -7,14 +7,13 @@ import { Calendar } from '@/components/ui/calendar';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 import { LineChart, CartesianGrid, XAxis, YAxis, Legend, Tooltip, Line } from "recharts";
 import { DateRange } from 'react-day-picker';
-import { format, isWithinInterval, startOfMonth, endOfMonth, eachMonthOfInterval, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery } from '@tanstack/react-query';
-import { fetchJournalEntries } from '@/queries/journalEntries';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useIncomeStatement } from '@/hooks/reports/useIncomeStatement';
 
 const chartConfig = {
   income: {
@@ -30,61 +29,12 @@ const chartConfig = {
 const IncomeStatementReport = () => {
     const { toast } = useToast();
     const [date, setDate] = useState<DateRange | undefined>();
-    const { data: journalEntries = [], isLoading } = useQuery({
-      queryKey: ['journalEntries'],
-      queryFn: () => fetchJournalEntries()
-    });
+    
+    const { processedData, isLoading } = useIncomeStatement({ dateRange: date });
 
     const formatCurrency = (value: number) => {
         return value.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
     }
-
-    const processedData = useMemo(() => {
-        const fromDate = date?.from;
-        const toDate = date?.to ? new Date(date.to.getTime() + 24*60*60*1000 - 1) : (date?.from ? new Date(date.from.getTime() + 24*60*60*1000-1) : undefined);
-
-        const filteredEntries = journalEntries.filter(entry => {
-            if (!fromDate || !toDate) return true;
-            const entryDate = parseISO(entry.date);
-            return isWithinInterval(entryDate, { start: fromDate, end: toDate });
-        });
-
-        const incomeEntries = filteredEntries.filter(e => e.type === 'Ingreso' && e.status !== 'Anulada');
-        const expenseEntries = filteredEntries.filter(e => e.type === 'Egreso' && e.status !== 'Anulada');
-
-        const totalIncome = incomeEntries.reduce((sum, entry) => {
-            const entryTotal = entry.lines.reduce((lineSum, line) => lineSum + line.credit, 0);
-            return sum + entryTotal;
-        }, 0);
-
-        const totalExpenses = expenseEntries.reduce((sum, entry) => {
-            const entryTotal = entry.lines.reduce((lineSum, line) => lineSum + line.debit, 0);
-            return sum + entryTotal;
-        }, 0);
-
-        const netProfit = totalIncome - totalExpenses;
-
-        const chartData = (fromDate && toDate) ? eachMonthOfInterval({ start: fromDate, end: toDate }).map(monthStart => {
-            const monthEnd = endOfMonth(monthStart);
-            const monthName = format(monthStart, 'MMM yyyy', { locale: es });
-
-            const monthlyIncome = incomeEntries
-                .filter(e => isWithinInterval(parseISO(e.date), { start: monthStart, end: monthEnd }))
-                .reduce((sum, entry) => sum + entry.lines.reduce((lineSum, line) => lineSum + line.credit, 0), 0);
-
-            const monthlyExpenses = expenseEntries
-                .filter(e => isWithinInterval(parseISO(e.date), { start: monthStart, end: monthEnd }))
-                .reduce((sum, entry) => sum + entry.lines.reduce((lineSum, line) => lineSum + line.debit, 0), 0);
-
-            return {
-                name: monthName,
-                income: monthlyIncome,
-                expenses: monthlyExpenses,
-            }
-        }) : [];
-
-        return { totalIncome, totalExpenses, netProfit, chartData };
-    }, [date, journalEntries]);
 
     const handleDownload = () => {
         toast({
