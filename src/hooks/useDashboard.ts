@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchReceivables } from '@/queries/receivables';
@@ -22,7 +21,7 @@ export const useDashboard = () => {
       .reduce((sum, r) => sum + r.outstandingBalance, 0);
 
     const totalPayable = payables
-      .filter(p => p.status !== 'Cancelada' && p.status !== 'Pagada')
+      .filter(p => p.status !== 'Pagada')
       .reduce((sum, p) => sum + p.outstandingBalance, 0);
 
     const netBalance = totalReceivable - totalPayable;
@@ -113,7 +112,7 @@ export const useDashboard = () => {
   }, [receivables, clientMap]);
 
   const payablesData = useMemo(() => {
-    const activePayables = payables.filter(p => p.status !== 'Cancelada' && p.status !== 'Pagada');
+    const activePayables = payables.filter(p => p.status !== 'Pagada');
     const supplierTotals = activePayables.reduce((acc, p) => {
       const supplierName = clientMap.get(p.supplierId) || 'Proveedor Desconocido';
       acc[supplierName] = (acc[supplierName] || 0) + p.outstandingBalance;
